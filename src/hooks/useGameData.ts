@@ -39,12 +39,13 @@ export function useProfile() {
   });
 }
 
+// Only for safe fields: username, avatar_id, objective, level, daily_goal_minutes
 export function useUpdateProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (updates: Partial<Profile>) => {
+    mutationFn: async (updates: Pick<Partial<Profile>, 'username' | 'avatar_id' | 'objective' | 'level' | 'daily_goal_minutes'>) => {
       if (!user) throw new Error('Not authenticated');
       const { error } = await supabase
         .from('profiles')
@@ -89,67 +90,67 @@ export function useLessonProgress() {
   });
 }
 
+// Server-side validated lesson completion
 export function useCompleteLessonMutation() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ lessonId, perfect, xpEarned }: { lessonId: string; perfect: boolean; xpEarned: number }) => {
+    mutationFn: async ({ lessonId, mistakes }: { lessonId: string; mistakes: number }) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Upsert lesson progress
-      const { error: progressError } = await supabase
-        .from('user_lesson_progress')
-        .upsert({
-          user_id: user.id,
-          lesson_id: lessonId,
-          completed: true,
-          perfect,
-          attempts: 1,
-          completed_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,lesson_id' });
-      if (progressError) throw progressError;
-
-      // Get current profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      if (!profile) throw new Error('Profile not found');
-
-      // Check XP boost
-      let multiplier = 1;
-      if (profile.xp_boost_until && new Date(profile.xp_boost_until) > new Date()) {
-        multiplier = 2;
-      }
-
-      const totalXp = xpEarned * multiplier;
-      const today = new Date().toISOString().split('T')[0];
-      const isNewDay = profile.last_lesson_date !== today;
-
-      const updates: Record<string, unknown> = {
-        xp_total: profile.xp_total + totalXp,
-        xp_weekly: profile.xp_weekly + totalXp,
-        last_lesson_date: today,
-      };
-
-      if (isNewDay) {
-        updates.streak_current = profile.streak_current + 1;
-        if (profile.streak_current + 1 > profile.streak_longest) {
-          updates.streak_longest = profile.streak_current + 1;
-        }
-      }
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-      if (updateError) throw updateError;
+      const { data, error } = await supabase.functions.invoke('complete-lesson', {
+        body: { lessonId, mistakes },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { success: boolean; xpEarned: number; perfect: boolean };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['lesson_progress'] });
+    },
+  });
+}
+
+// Server-side validated heart loss
+export function useLoseHeartMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase.functions.invoke('lose-heart', {
+        body: {},
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { success: boolean; hearts: number };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+// Server-side validated shop purchase
+export function useShopPurchaseMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemType: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase.functions.invoke('shop-purchase', {
+        body: { itemType },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
