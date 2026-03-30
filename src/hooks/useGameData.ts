@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useRef } from 'react';
+
+// Compute effective hearts client-side for display (server is source of truth)
+function computeEffectiveHearts(hearts: number, heartsUpdatedAt: string | null): number {
+  if (hearts >= 5) return 5;
+  const elapsed = Date.now() - new Date(heartsUpdatedAt ?? Date.now()).getTime();
+  return Math.min(5, hearts + Math.floor(elapsed / (30 * 60 * 1000)));
+}
 
 export interface Profile {
   id: string;
@@ -14,10 +22,13 @@ export interface Profile {
   streak_current: number;
   streak_longest: number;
   hearts: number;
+  hearts_updated_at: string | null;
   fincoins: number;
   league: string;
   xp_boost_until: string | null;
   last_lesson_date: string | null;
+  // Computed
+  effectiveHearts?: number;
 }
 
 export function useProfile() {
@@ -33,9 +44,12 @@ export function useProfile() {
         .eq('id', user.id)
         .single();
       if (error) throw error;
-      return data as Profile;
+      const profile = data as Profile;
+      profile.effectiveHearts = computeEffectiveHearts(profile.hearts, profile.hearts_updated_at);
+      return profile;
     },
     enabled: !!user,
+    refetchInterval: 60000, // Refresh every minute to update heart auto-refill display
   });
 }
 
@@ -142,8 +156,9 @@ export function useShopPurchaseMutation() {
   return useMutation({
     mutationFn: async (itemType: string) => {
       if (!user) throw new Error('Not authenticated');
+      const idempotencyKey = crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke('shop-purchase', {
-        body: { itemType },
+        body: { itemType, idempotencyKey },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

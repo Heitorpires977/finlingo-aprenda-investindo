@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-1 text-finlingo-hearts">
               <Heart className="h-4 w-4 fill-current" />
-              <span>{profile?.hearts ?? 5}</span>
+              <span>{profile?.effectiveHearts ?? profile?.hearts ?? 5}</span>
             </div>
             <div className="flex items-center gap-1 text-finlingo-coins">
               <Coins className="h-4 w-4" />

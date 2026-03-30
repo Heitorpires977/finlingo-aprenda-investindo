@@ -30,18 +30,29 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    // Atomically decrement hearts
+    // Get profile and compute effective hearts with auto-refill
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("hearts")
+      .select("hearts, hearts_updated_at")
       .eq("id", userId)
       .single();
     if (!profile) {
       return new Response(JSON.stringify({ error: "Profile not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const newHearts = Math.max(0, (profile.hearts ?? 0) - 1);
-    await supabaseAdmin.from("profiles").update({ hearts: newHearts }).eq("id", userId);
+    // Compute effective hearts (auto-refill: 1 per 30 min, max 5)
+    const elapsed = Date.now() - new Date(profile.hearts_updated_at ?? Date.now()).getTime();
+    const refilled = Math.min(5, (profile.hearts ?? 0) + Math.floor(elapsed / (30 * 60 * 1000)));
+
+    if (refilled <= 0) {
+      return new Response(JSON.stringify({ error: "No hearts", hearts: 0 }), { status: 403, headers: corsHeaders });
+    }
+
+    const newHearts = refilled - 1;
+    await supabaseAdmin.from("profiles").update({
+      hearts: newHearts,
+      hearts_updated_at: new Date().toISOString(),
+    }).eq("id", userId);
 
     return new Response(JSON.stringify({ success: true, hearts: newHearts }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

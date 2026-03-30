@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
     });
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate JWT
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
@@ -37,6 +36,20 @@ Deno.serve(async (req) => {
     const mistakes = typeof body.mistakes === "number" ? Math.max(0, Math.floor(body.mistakes)) : null;
     if (!lessonId || mistakes === null) {
       return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: corsHeaders });
+    }
+
+    // Idempotency: check if lesson already completed
+    const { data: existingProgress } = await supabaseAdmin
+      .from("user_lesson_progress")
+      .select("completed")
+      .eq("user_id", userId)
+      .eq("lesson_id", lessonId)
+      .eq("completed", true)
+      .single();
+    if (existingProgress) {
+      return new Response(JSON.stringify({ success: true, xpEarned: 0, perfect: false, alreadyCompleted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Validate lesson exists
@@ -94,7 +107,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get profile
+    // Get profile and compute effective hearts with auto-refill
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("*")
@@ -104,7 +117,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Profile not found" }), { status: 404, headers: corsHeaders });
     }
 
-    if ((profile.hearts ?? 0) <= 0) {
+    // Compute effective hearts
+    const elapsed = Date.now() - new Date(profile.hearts_updated_at ?? Date.now()).getTime();
+    const effectiveHearts = Math.min(5, (profile.hearts ?? 0) + Math.floor(elapsed / (30 * 60 * 1000)));
+
+    if (effectiveHearts <= 0) {
       return new Response(JSON.stringify({ error: "No hearts" }), { status: 403, headers: corsHeaders });
     }
 

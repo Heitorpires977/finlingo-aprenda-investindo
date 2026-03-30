@@ -149,6 +149,7 @@ export type Database = {
           daily_goal_minutes: number | null
           fincoins: number | null
           hearts: number | null
+          hearts_updated_at: string | null
           id: string
           last_lesson_date: string | null
           league: string | null
@@ -167,6 +168,7 @@ export type Database = {
           daily_goal_minutes?: number | null
           fincoins?: number | null
           hearts?: number | null
+          hearts_updated_at?: string | null
           id: string
           last_lesson_date?: string | null
           league?: string | null
@@ -185,6 +187,7 @@ export type Database = {
           daily_goal_minutes?: number | null
           fincoins?: number | null
           hearts?: number | null
+          hearts_updated_at?: string | null
           id?: string
           last_lesson_date?: string | null
           league?: string | null
@@ -423,7 +426,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_effective_hearts: {
+        Args: { p_hearts: number; p_hearts_updated_at: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
