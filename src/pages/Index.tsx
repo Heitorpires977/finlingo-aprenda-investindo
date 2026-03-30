@@ -9,8 +9,18 @@ export default function Index() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate('/learn');
+    if (!loading && user) navigate('/learn', { replace: true });
   }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-primary font-black text-2xl">💰 FinLingo</div>
+      </div>
+    );
+  }
+
+  if (user) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +54,7 @@ export default function Index() {
         <h2 className="text-2xl font-black text-center text-foreground">
           Por que FinLingo?
         </h2>
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {[
             { icon: BookOpen, title: 'Lições Interativas', desc: 'Atividades variadas como quiz, preencher lacunas e simulações', color: 'text-primary' },
             { icon: Trophy, title: 'Ligas e Ranking', desc: '12 ligas para competir com outros investidores', color: 'text-accent' },
