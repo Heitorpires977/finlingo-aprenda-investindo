@@ -77,16 +77,15 @@ export default function LessonPage() {
   const currentActivity = activities[currentIdx];
   const progressPct = ((currentIdx + (answered ? 1 : 0)) / activities.length) * 100;
 
+  const loseHeart = useLoseHeartMutation();
+
   const checkAnswer = (correct: boolean) => {
     setAnswered(true);
     setIsCorrect(correct);
     if (!correct) {
       setMistakes(m => m + 1);
-      const newHearts = hearts - 1;
-      setHearts(newHearts);
-      if (user) {
-        supabase.from('profiles').update({ hearts: newHearts }).eq('id', user.id);
-      }
+      setHearts(h => Math.max(0, h - 1));
+      loseHeart.mutate();
     }
   };
 
