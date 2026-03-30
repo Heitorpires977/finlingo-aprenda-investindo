@@ -53,7 +53,7 @@ export default function LessonPage() {
   }, [id]);
 
   useEffect(() => {
-    if (profile) setHearts(profile.hearts);
+    if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
   }, [profile]);
 
   useEffect(() => {
