@@ -44,9 +44,12 @@ export function useProfile() {
         .eq('id', user.id)
         .single();
       if (error) throw error;
-      return data as Profile;
+      const profile = data as Profile;
+      profile.effectiveHearts = computeEffectiveHearts(profile.hearts, profile.hearts_updated_at);
+      return profile;
     },
     enabled: !!user,
+    refetchInterval: 60000, // Refresh every minute to update heart auto-refill display
   });
 }
 
