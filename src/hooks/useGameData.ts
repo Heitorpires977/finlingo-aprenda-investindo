@@ -156,8 +156,9 @@ export function useShopPurchaseMutation() {
   return useMutation({
     mutationFn: async (itemType: string) => {
       if (!user) throw new Error('Not authenticated');
+      const idempotencyKey = crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke('shop-purchase', {
-        body: { itemType },
+        body: { itemType, idempotencyKey },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
