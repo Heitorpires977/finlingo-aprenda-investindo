@@ -133,13 +133,10 @@ export default function LessonPage() {
 
   const nextActivity = async () => {
     if (currentIdx + 1 >= activities.length) {
-      // Lesson complete
-      const perfect = mistakes === 0;
-      const xp = lesson.xp_reward + (perfect ? 5 : 0);
       try {
-        await completeLesson.mutateAsync({ lessonId: id!, perfect, xpEarned: xp });
+        const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
         await refetchProfile();
-        toast.success(`Lição completa! +${xp} XP 🎉`);
+        toast.success(`Lição completa! +${result.xpEarned} XP 🎉`);
       } catch {
         toast.error('Erro ao salvar progresso');
       }
