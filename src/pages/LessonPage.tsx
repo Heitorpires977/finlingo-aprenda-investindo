@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useCompleteLessonMutation } from '@/hooks/useGameData';
+import { useProfile, useCompleteLessonMutation, useLoseHeartMutation } from '@/hooks/useGameData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -77,16 +77,15 @@ export default function LessonPage() {
   const currentActivity = activities[currentIdx];
   const progressPct = ((currentIdx + (answered ? 1 : 0)) / activities.length) * 100;
 
+  const loseHeart = useLoseHeartMutation();
+
   const checkAnswer = (correct: boolean) => {
     setAnswered(true);
     setIsCorrect(correct);
     if (!correct) {
       setMistakes(m => m + 1);
-      const newHearts = hearts - 1;
-      setHearts(newHearts);
-      if (user) {
-        supabase.from('profiles').update({ hearts: newHearts }).eq('id', user.id);
-      }
+      setHearts(h => Math.max(0, h - 1));
+      loseHeart.mutate();
     }
   };
 
@@ -134,13 +133,10 @@ export default function LessonPage() {
 
   const nextActivity = async () => {
     if (currentIdx + 1 >= activities.length) {
-      // Lesson complete
-      const perfect = mistakes === 0;
-      const xp = lesson.xp_reward + (perfect ? 5 : 0);
       try {
-        await completeLesson.mutateAsync({ lessonId: id!, perfect, xpEarned: xp });
+        const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
         await refetchProfile();
-        toast.success(`Lição completa! +${xp} XP 🎉`);
+        toast.success(`Lição completa! +${result.xpEarned} XP 🎉`);
       } catch {
         toast.error('Erro ao salvar progresso');
       }

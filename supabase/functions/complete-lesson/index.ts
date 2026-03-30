@@ -2,30 +2,42 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing auth");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
+    const supabaseAnon = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const supabaseUser = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+    // Validate JWT
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const userId = claimsData.claims.sub;
 
-    const { lessonId, mistakes } = await req.json();
-    if (!lessonId || typeof lessonId !== "string") throw new Error("Invalid lessonId");
-    if (typeof mistakes !== "number" || mistakes < 0) throw new Error("Invalid mistakes");
+    // Validate input
+    const body = await req.json();
+    const lessonId = typeof body.lessonId === "string" ? body.lessonId.trim() : null;
+    const mistakes = typeof body.mistakes === "number" ? Math.max(0, Math.floor(body.mistakes)) : null;
+    if (!lessonId || mistakes === null) {
+      return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: corsHeaders });
+    }
 
     // Validate lesson exists
     const { data: lesson, error: lessonError } = await supabaseAdmin
@@ -33,11 +45,12 @@ Deno.serve(async (req) => {
       .select("id, xp_reward, section_id, lesson_number, is_quiz")
       .eq("id", lessonId)
       .single();
-    if (lessonError || !lesson) throw new Error("Lesson not found");
+    if (lessonError || !lesson) {
+      return new Response(JSON.stringify({ error: "Lesson not found" }), { status: 404, headers: corsHeaders });
+    }
 
-    // Validate lesson is unlocked (user completed previous lesson)
+    // Validate lesson is unlocked
     if (!(lesson.section_id === 1 && lesson.lesson_number === 1)) {
-      // Check previous lesson in same section
       const { data: prevLesson } = await supabaseAdmin
         .from("lessons")
         .select("id")
@@ -50,14 +63,13 @@ Deno.serve(async (req) => {
         const { data: prevProgress } = await supabaseAdmin
           .from("user_lesson_progress")
           .select("completed")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("lesson_id", prevLesson.id)
           .eq("completed", true)
           .single();
         if (prevProgress) unlocked = true;
       }
 
-      // First lesson of section: check last lesson of previous section
       if (!unlocked && lesson.lesson_number === 1 && lesson.section_id > 1) {
         const { data: prevSectionLessons } = await supabaseAdmin
           .from("lessons")
@@ -69,7 +81,7 @@ Deno.serve(async (req) => {
           const { data: prevProgress } = await supabaseAdmin
             .from("user_lesson_progress")
             .select("completed")
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .eq("lesson_id", prevSectionLessons[0].id)
             .eq("completed", true)
             .single();
@@ -77,24 +89,28 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!unlocked) throw new Error("Lesson locked");
+      if (!unlocked) {
+        return new Response(JSON.stringify({ error: "Lesson locked" }), { status: 403, headers: corsHeaders });
+      }
     }
 
     // Get profile
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
-    if (profileError || !profile) throw new Error("Profile not found");
+    if (!profile) {
+      return new Response(JSON.stringify({ error: "Profile not found" }), { status: 404, headers: corsHeaders });
+    }
 
-    // Validate hearts: user must have had enough hearts for the mistakes
-    if (profile.hearts < 0) throw new Error("No hearts");
+    if ((profile.hearts ?? 0) <= 0) {
+      return new Response(JSON.stringify({ error: "No hearts" }), { status: 403, headers: corsHeaders });
+    }
 
     const perfect = mistakes === 0;
     const xpReward = (lesson.xp_reward ?? 10) + (perfect ? 5 : 0);
 
-    // Check XP boost
     let multiplier = 1;
     if (profile.xp_boost_until && new Date(profile.xp_boost_until) > new Date()) {
       multiplier = 2;
@@ -122,7 +138,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin
       .from("user_lesson_progress")
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         lesson_id: lessonId,
         completed: true,
         perfect,
@@ -131,7 +147,7 @@ Deno.serve(async (req) => {
       }, { onConflict: "user_id,lesson_id" });
 
     // Update profile
-    await supabaseAdmin.from("profiles").update(updates).eq("id", user.id);
+    await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
 
     return new Response(JSON.stringify({ success: true, xpEarned: totalXp, perfect }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

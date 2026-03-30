@@ -1,7 +1,5 @@
 import AppLayout from '@/components/AppLayout';
-import { useProfile, useUpdateProfile } from '@/hooks/useGameData';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useProfile, useShopPurchaseMutation } from '@/hooks/useGameData';
 import { Button } from '@/components/ui/button';
 import { Heart, Zap, Snowflake, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,40 +32,18 @@ const SHOP_ITEMS = [
 ];
 
 export default function ShopPage() {
-  const { user } = useAuth();
-  const { data: profile, refetch } = useProfile();
-  const updateProfile = useUpdateProfile();
+  const { data: profile } = useProfile();
+  const purchase = useShopPurchaseMutation();
 
   const handlePurchase = async (item: typeof SHOP_ITEMS[0]) => {
-    if (!profile || !user) return;
+    if (!profile) return;
     if (profile.fincoins < item.price) {
       toast.error('FinCoins insuficientes!');
       return;
     }
 
     try {
-      // Record transaction
-      await supabase.from('transactions').insert({
-        user_id: user.id,
-        item_type: item.id,
-        fincoins_spent: item.price,
-      });
-
-      const updates: Record<string, unknown> = {
-        fincoins: profile.fincoins - item.price,
-      };
-
-      if (item.id === 'heart_refill') {
-        updates.hearts = 5;
-      } else if (item.id === 'xp_boost') {
-        const boostUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-        updates.xp_boost_until = boostUntil;
-      } else if (item.id === 'streak_freeze') {
-        await supabase.from('streak_freezes').insert({ user_id: user.id });
-      }
-
-      await updateProfile.mutateAsync(updates as Parameters<typeof updateProfile.mutateAsync>[0]);
-      await refetch();
+      await purchase.mutateAsync(item.id);
       toast.success(`${item.name} comprado! 🎉`);
     } catch {
       toast.error('Erro ao comprar item');
@@ -106,7 +82,7 @@ export default function ShopPage() {
                   variant="coins"
                   size="sm"
                   onClick={() => handlePurchase(item)}
-                  disabled={!canAfford}
+                  disabled={!canAfford || purchase.isPending}
                   className="min-w-[80px]"
                 >
                   {item.price} 🪙
