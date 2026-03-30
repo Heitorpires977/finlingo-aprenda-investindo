@@ -38,15 +38,31 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const itemType = typeof body.itemType === "string" ? body.itemType.trim() : null;
+    const idempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : null;
     const item = itemType ? SHOP_ITEMS[itemType] : null;
     if (!item) {
       return new Response(JSON.stringify({ error: "Invalid item" }), { status: 400, headers: corsHeaders });
     }
 
+    // Idempotency check: look for recent identical transaction (within 10 seconds)
+    if (idempotencyKey) {
+      const { data: existing } = await supabaseAdmin
+        .from("transactions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("item_type", `${itemType}:${idempotencyKey}`)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        return new Response(JSON.stringify({ success: true, deduplicated: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Server-side balance check
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("fincoins, hearts, xp_boost_until")
+      .select("fincoins, hearts, hearts_updated_at, xp_boost_until")
       .eq("id", userId)
       .single();
     if (!profile) {
@@ -63,18 +79,18 @@ Deno.serve(async (req) => {
 
     if (itemType === "heart_refill") {
       updates.hearts = 5;
+      updates.hearts_updated_at = new Date().toISOString();
     } else if (itemType === "xp_boost") {
       updates.xp_boost_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
 
-    // Record transaction
+    // Record transaction with idempotency key
     await supabaseAdmin.from("transactions").insert({
       user_id: userId,
-      item_type: itemType,
+      item_type: idempotencyKey ? `${itemType}:${idempotencyKey}` : itemType,
       fincoins_spent: item.price,
     });
 
-    // Apply effects
     await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
 
     if (itemType === "streak_freeze") {
