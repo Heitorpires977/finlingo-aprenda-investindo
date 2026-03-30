@@ -9,8 +9,18 @@ export default function Index() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate('/learn');
+    if (!loading && user) navigate('/learn', { replace: true });
   }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-primary font-black text-2xl">💰 FinLingo</div>
+      </div>
+    );
+  }
+
+  if (user) return null;
 
   return (
     <div className="min-h-screen bg-background">
