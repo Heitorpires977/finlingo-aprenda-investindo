@@ -136,7 +136,8 @@ export default function LessonPage() {
       try {
         const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
         await refetchProfile();
-        toast.success(`Lição completa! +${result.xpEarned} XP 🎉`);
+        const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
+        toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
       } catch {
         toast.error('Erro ao salvar progresso');
       }
