@@ -125,6 +125,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No hearts" }), { status: 403, headers: corsHeaders });
     }
 
+    const XP_TO_COIN_RATIO = 50;
+
     const perfect = mistakes === 0;
     const xpReward = (lesson.xp_reward ?? 10) + (perfect ? 5 : 0);
 
@@ -133,6 +135,7 @@ Deno.serve(async (req) => {
       multiplier = 2;
     }
     const totalXp = xpReward * multiplier;
+    const coinsEarned = Math.floor(totalXp / XP_TO_COIN_RATIO);
 
     const today = new Date().toISOString().split("T")[0];
     const isNewDay = profile.last_lesson_date !== today;
@@ -140,6 +143,7 @@ Deno.serve(async (req) => {
     const updates: Record<string, unknown> = {
       xp_total: (profile.xp_total ?? 0) + totalXp,
       xp_weekly: (profile.xp_weekly ?? 0) + totalXp,
+      fincoins: (profile.fincoins ?? 0) + coinsEarned,
       last_lesson_date: today,
     };
 
