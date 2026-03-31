@@ -231,6 +231,44 @@ export type Database = {
           },
         ]
       }
+      technical_guides: {
+        Row: {
+          content: string
+          created_at: string
+          icon: string
+          id: string
+          lesson_id: string
+          summary: string
+          title: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          lesson_id: string
+          summary?: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          lesson_id?: string
+          summary?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_guides_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           created_at: string | null
@@ -429,6 +467,10 @@ export type Database = {
       get_effective_hearts: {
         Args: { p_hearts: number; p_hearts_updated_at: string }
         Returns: number
+      }
+      user_completed_lesson: {
+        Args: { p_lesson_id: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

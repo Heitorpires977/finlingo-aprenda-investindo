@@ -11,6 +11,7 @@ import LessonPage from "./pages/LessonPage";
 import ShopPage from "./pages/ShopPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
+import WikiPage from "./pages/WikiPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const AppRoutes = () => (
     <Route path="/shop" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
     <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+    <Route path="/wiki" element={<ProtectedRoute><WikiPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

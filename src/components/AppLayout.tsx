@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useGameData';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Trophy, ShoppingBag, User, Flame, Heart, Coins } from 'lucide-react';
+import { BookOpen, Trophy, ShoppingBag, User, Flame, Heart, Coins, GraduationCap } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: profile } = useProfile();
@@ -39,6 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-lg mx-auto flex justify-around py-2">
           {[
             { to: '/learn', icon: BookOpen, label: 'Aprender' },
+            { to: '/wiki', icon: GraduationCap, label: 'Wiki' },
             { to: '/leaderboard', icon: Trophy, label: 'Liga' },
             { to: '/shop', icon: ShoppingBag, label: 'Loja' },
             { to: '/profile', icon: User, label: 'Perfil' },
