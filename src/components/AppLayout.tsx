@@ -39,6 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-lg mx-auto flex justify-around py-2">
           {[
             { to: '/learn', icon: BookOpen, label: 'Aprender' },
+            { to: '/wiki', icon: GraduationCap, label: 'Wiki' },
             { to: '/leaderboard', icon: Trophy, label: 'Liga' },
             { to: '/shop', icon: ShoppingBag, label: 'Loja' },
             { to: '/profile', icon: User, label: 'Perfil' },
