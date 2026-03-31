@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useGameData';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Trophy, ShoppingBag, User, Flame, Heart, Coins } from 'lucide-react';
+import { BookOpen, Trophy, ShoppingBag, User, Flame, Heart, Coins, GraduationCap } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: profile } = useProfile();

@@ -11,6 +11,7 @@ import LessonPage from "./pages/LessonPage";
 import ShopPage from "./pages/ShopPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
+import WikiPage from "./pages/WikiPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
