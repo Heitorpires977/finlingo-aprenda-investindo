@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
     // Update profile
     await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
 
-    return new Response(JSON.stringify({ success: true, xpEarned: totalXp, perfect }), {
+    return new Response(JSON.stringify({ success: true, xpEarned: totalXp, coinsEarned, perfect }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
