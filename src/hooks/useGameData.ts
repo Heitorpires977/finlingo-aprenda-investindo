@@ -118,7 +118,7 @@ export function useCompleteLessonMutation() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return data as { success: boolean; xpEarned: number; perfect: boolean };
+      return data as { success: boolean; xpEarned: number; coinsEarned: number; perfect: boolean };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
