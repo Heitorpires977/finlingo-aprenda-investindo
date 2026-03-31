@@ -379,6 +379,42 @@ export type Database = {
           },
         ]
       }
+      user_guide_reads: {
+        Row: {
+          guide_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          guide_id: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          guide_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_guide_reads_guide_id_fkey"
+            columns: ["guide_id"]
+            isOneToOne: false
+            referencedRelation: "technical_guides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_guide_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_lesson_progress: {
         Row: {
           attempts: number | null
