@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -10,6 +10,8 @@ export interface TechnicalGuide {
   content: string;
   icon: string;
   created_at: string;
+  unlocked: boolean;
+  read: boolean;
 }
 
 export function useTechnicalGuides() {
@@ -18,29 +20,52 @@ export function useTechnicalGuides() {
   return useQuery({
     queryKey: ['technical_guides', user?.id],
     queryFn: async () => {
-      // Fetch all guides (metadata always visible via RLS)
       const { data: guides, error } = await supabase
         .from('technical_guides')
         .select('*')
         .order('created_at');
       if (error) throw error;
 
-      // Fetch user's completed lessons to determine unlock status
       let completedLessonIds = new Set<string>();
+      let readGuideIds = new Set<string>();
+
       if (user) {
-        const { data: progress } = await supabase
-          .from('user_lesson_progress')
-          .select('lesson_id')
-          .eq('user_id', user.id)
-          .eq('completed', true);
-        completedLessonIds = new Set(progress?.map(p => p.lesson_id) ?? []);
+        const [progressRes, readsRes] = await Promise.all([
+          supabase.from('user_lesson_progress').select('lesson_id').eq('user_id', user.id).eq('completed', true),
+          supabase.from('user_guide_reads').select('guide_id').eq('user_id', user.id),
+        ]);
+        completedLessonIds = new Set(progressRes.data?.map(p => p.lesson_id) ?? []);
+        readGuideIds = new Set(readsRes.data?.map(r => r.guide_id) ?? []);
       }
 
       return (guides as TechnicalGuide[]).map(g => ({
         ...g,
         unlocked: completedLessonIds.has(g.lesson_id),
+        read: readGuideIds.has(g.id),
       }));
     },
     enabled: !!user,
+  });
+}
+
+export function useMarkGuideReadMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (guideId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase.functions.invoke('mark-guide-read', {
+        body: { guideId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { success: boolean; xpEarned: number; badgeEarned: boolean; alreadyRead?: boolean };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['technical_guides'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user_badges'] });
+    },
   });
 }
