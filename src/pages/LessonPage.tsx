@@ -25,6 +25,7 @@ export default function LessonPage() {
   const { user } = useAuth();
   const { data: profile, refetch: refetchProfile } = useProfile();
   const completeLesson = useCompleteLessonMutation();
+  const loseHeart = useLoseHeartMutation();
 
   const [lesson, setLesson] = useState<{ title: string; xp_reward: number; activity_data: Activity[]; is_quiz: boolean } | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -77,7 +78,6 @@ export default function LessonPage() {
   const currentActivity = activities[currentIdx];
   const progressPct = ((currentIdx + (answered ? 1 : 0)) / activities.length) * 100;
 
-  const loseHeart = useLoseHeartMutation();
 
   const checkAnswer = (correct: boolean) => {
     setAnswered(true);
