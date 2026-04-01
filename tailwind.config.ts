@@ -117,6 +117,8 @@ export default {
         "slide-up": "slide-up 0.4s ease-out",
         "pulse-glow": "pulse-glow 2s infinite",
         "xp-pop": "xp-pop 0.3s ease-out",
+        "shake": "shake 0.4s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
       },
     },
   },
