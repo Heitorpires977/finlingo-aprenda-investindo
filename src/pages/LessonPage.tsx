@@ -27,7 +27,7 @@ export default function LessonPage() {
   const completeLesson = useCompleteLessonMutation();
   const loseHeart = useLoseHeartMutation();
 
-  const [lesson, setLesson] = useState<{ title: string; xp_reward: number; activity_data: Activity[]; is_quiz: boolean } | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [answered, setAnswered] = useState(false);
