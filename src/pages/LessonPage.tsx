@@ -302,8 +302,13 @@ export default function LessonPage() {
 
         {/* Next button */}
         {answered && (
-          <Button onClick={nextActivity} className="w-full h-12 animate-bounce-in" variant={isCorrect ? 'success' : 'default'}>
-            {currentIdx + 1 >= activities.length ? 'Finalizar Lição' : 'Continuar'}
+          <Button
+            onClick={nextActivity}
+            disabled={completeLesson.isPending}
+            className="w-full h-12 animate-bounce-in"
+            variant={isCorrect ? 'success' : 'default'}
+          >
+            {completeLesson.isPending ? 'Salvando...' : currentIdx + 1 >= activities.length ? 'Finalizar Lição' : 'Continuar'}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         )}
