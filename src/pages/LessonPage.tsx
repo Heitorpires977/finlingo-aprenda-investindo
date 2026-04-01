@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useCompleteLessonMutation, useLoseHeartMutation } from '@/hooks/useGameData';
+import { useProfile, useCompleteLessonMutation, useLoseHeartMutation, useLesson } from '@/hooks/useGameData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -26,8 +25,8 @@ export default function LessonPage() {
   const { data: profile, refetch: refetchProfile } = useProfile();
   const completeLesson = useCompleteLessonMutation();
   const loseHeart = useLoseHeartMutation();
+  const { data: lesson, isLoading: lessonLoading } = useLesson(id);
 
-  const [isFinishing, setIsFinishing] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [answered, setAnswered] = useState(false);
@@ -38,20 +37,6 @@ export default function LessonPage() {
   const [matchSelected, setMatchSelected] = useState<{ side: 'left' | 'right'; idx: number } | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<Set<number>>(new Set());
   const [shuffledRight, setShuffledRight] = useState<number[]>([]);
-
-  useEffect(() => {
-    if (!id) return;
-    supabase.from('lessons').select('*').eq('id', id).single().then(({ data }) => {
-      if (data) {
-        setLesson({
-          title: data.title,
-          xp_reward: data.xp_reward ?? 10,
-          activity_data: data.activity_data as unknown as Activity[],
-          is_quiz: data.is_quiz ?? false,
-        });
-      }
-    });
-  }, [id]);
 
   useEffect(() => {
     if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
