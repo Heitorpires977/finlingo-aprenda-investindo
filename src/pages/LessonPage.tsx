@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useCompleteLessonMutation, useLoseHeartMutation } from '@/hooks/useGameData';
+import { useProfile, useCompleteLessonMutation, useLoseHeartMutation, useLesson } from '@/hooks/useGameData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -26,8 +25,8 @@ export default function LessonPage() {
   const { data: profile, refetch: refetchProfile } = useProfile();
   const completeLesson = useCompleteLessonMutation();
   const loseHeart = useLoseHeartMutation();
+  const { data: lesson, isLoading: lessonLoading } = useLesson(id);
 
-  const [lesson, setLesson] = useState<{ title: string; xp_reward: number; activity_data: Activity[]; is_quiz: boolean } | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [answered, setAnswered] = useState(false);
@@ -38,20 +37,6 @@ export default function LessonPage() {
   const [matchSelected, setMatchSelected] = useState<{ side: 'left' | 'right'; idx: number } | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<Set<number>>(new Set());
   const [shuffledRight, setShuffledRight] = useState<number[]>([]);
-
-  useEffect(() => {
-    if (!id) return;
-    supabase.from('lessons').select('*').eq('id', id).single().then(({ data }) => {
-      if (data) {
-        setLesson({
-          title: data.title,
-          xp_reward: data.xp_reward ?? 10,
-          activity_data: data.activity_data as unknown as Activity[],
-          is_quiz: data.is_quiz ?? false,
-        });
-      }
-    });
-  }, [id]);
 
   useEffect(() => {
     if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
@@ -66,7 +51,7 @@ export default function LessonPage() {
     }
   }, [currentIdx, lesson]);
 
-  if (!lesson) {
+  if (!lesson || lessonLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Carregando lição...</div>
@@ -317,8 +302,13 @@ export default function LessonPage() {
 
         {/* Next button */}
         {answered && (
-          <Button onClick={nextActivity} className="w-full h-12 animate-bounce-in" variant={isCorrect ? 'success' : 'default'}>
-            {currentIdx + 1 >= activities.length ? 'Finalizar Lição' : 'Continuar'}
+          <Button
+            onClick={nextActivity}
+            disabled={completeLesson.isPending}
+            className="w-full h-12 animate-bounce-in"
+            variant={isCorrect ? 'success' : 'default'}
+          >
+            {completeLesson.isPending ? 'Salvando...' : currentIdx + 1 >= activities.length ? 'Finalizar Lição' : 'Continuar'}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         )}
