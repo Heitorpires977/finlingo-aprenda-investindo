@@ -78,7 +78,6 @@ export default function LessonPage() {
   const currentActivity = activities[currentIdx];
   const progressPct = ((currentIdx + (answered ? 1 : 0)) / activities.length) * 100;
 
-  const loseHeart = useLoseHeartMutation();
 
   const checkAnswer = (correct: boolean) => {
     setAnswered(true);
