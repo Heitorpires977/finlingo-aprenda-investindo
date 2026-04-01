@@ -51,7 +51,7 @@ export default function LessonPage() {
     }
   }, [currentIdx, lesson]);
 
-  if (!lesson) {
+  if (!lesson || lessonLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Carregando lição...</div>
