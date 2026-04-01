@@ -25,6 +25,7 @@ export default function LessonPage() {
   const { user } = useAuth();
   const { data: profile, refetch: refetchProfile } = useProfile();
   const completeLesson = useCompleteLessonMutation();
+  const loseHeart = useLoseHeartMutation();
 
   const [lesson, setLesson] = useState<{ title: string; xp_reward: number; activity_data: Activity[]; is_quiz: boolean } | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
