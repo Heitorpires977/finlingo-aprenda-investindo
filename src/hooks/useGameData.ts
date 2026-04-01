@@ -86,6 +86,25 @@ export function useLessons(sectionId?: number) {
   });
 }
 
+export function useLesson(id?: string) {
+  return useQuery({
+    queryKey: ['lesson', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase.from('lessons').select('*').eq('id', id).single();
+      if (error) throw error;
+      return {
+        title: data.title,
+        xp_reward: data.xp_reward ?? 10,
+        activity_data: data.activity_data as unknown as { type: string; question: string; options?: string[]; correct?: number | boolean; answer?: string; explanation?: string; pairs?: { left: string; right: string }[] }[],
+        is_quiz: data.is_quiz ?? false,
+      };
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useLessonProgress() {
   const { user } = useAuth();
 
