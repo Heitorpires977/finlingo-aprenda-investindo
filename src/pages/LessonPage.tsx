@@ -104,10 +104,26 @@ export default function LessonPage() {
   const nextActivity = async () => {
     if (currentIdx + 1 >= activities.length) {
       try {
+        const oldXp = profile?.xp_total ?? 0;
         const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
         await refetchProfile();
         const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
         toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
+
+        // Check XP milestone bonus (1 FinCoin per 100 XP crossed)
+        const milestoneCoins = Math.floor((oldXp + result.xpEarned) / 100) - Math.floor(oldXp / 100);
+        if (milestoneCoins > 0) {
+          setTimeout(() => {
+            toast('🪙 Parabéns! Você acumulou +100 XP e ganhou 1 FinCoin!', {
+              duration: 3000,
+              style: {
+                background: 'hsl(var(--primary))',
+                color: 'hsl(var(--primary-foreground))',
+                border: 'none',
+              },
+            });
+          }, 1500);
+        }
       } catch {
         toast.error('Erro ao salvar progresso');
       }
