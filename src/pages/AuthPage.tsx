@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
 export default function AuthPage() {
@@ -10,6 +11,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -20,9 +22,16 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         await signIn(email, password);
+        // Persist "remember me" preference
+        if (rememberMe) {
+          localStorage.setItem('finlingo-remember', 'true');
+        } else {
+          localStorage.setItem('finlingo-remember', 'false');
+        }
         toast.success('Bem-vindo de volta!');
       } else {
         await signUp(email, password, username);
+        localStorage.setItem('finlingo-remember', 'true');
         toast.success('Conta criada com sucesso!');
       }
       navigate('/learn');
@@ -105,6 +114,24 @@ export default function AuthPage() {
                 minLength={6}
               />
             </div>
+
+            {isLogin && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  className="border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="text-sm font-semibold text-foreground cursor-pointer select-none flex items-center gap-1.5"
+                >
+                  <span>💰</span> Lembrar de mim
+                </label>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading ? 'Carregando...' : isLogin ? 'Entrar' : 'Criar Conta'}
             </Button>
