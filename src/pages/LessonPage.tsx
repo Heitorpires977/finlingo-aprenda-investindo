@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useCompleteLessonMutation, useLoseHeartMutation, useLesson } from '@/hooks/useGameData';
@@ -6,9 +6,12 @@ import { toast } from 'sonner';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { LessonFooter } from '@/components/lesson/LessonFooter';
 import { ActivityContent } from '@/components/lesson/ActivityContent';
+import { ExplanationSlide } from '@/components/lesson/ExplanationSlide';
+import { ExampleSlide } from '@/components/lesson/ExampleSlide';
 import { LessonSkeleton } from '@/components/lesson/LessonSkeleton';
 import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
-import type { Activity } from '@/components/lesson/types';
+import type { LessonStep, Activity, ContentSlide, DEFAULT_INTRO_SLIDES } from '@/components/lesson/types';
+import { DEFAULT_INTRO_SLIDES as INTRO_SLIDES } from '@/components/lesson/types';
 
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,26 +32,50 @@ export default function LessonPage() {
   const [matchSelected, setMatchSelected] = useState<{ side: 'left' | 'right'; idx: number } | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<Set<number>>(new Set());
   const [shuffledRight, setShuffledRight] = useState<number[]>([]);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   useEffect(() => {
     if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
   }, [profile]);
 
-  const currentActivity = lesson?.activity_data[currentIdx];
+  // Build unified steps: intro slides + activities
+  const steps: LessonStep[] = useMemo(() => {
+    if (!lesson) return [];
+
+    // Check if activity_data already contains slides
+    const activities = lesson.activity_data;
+    const hasSlides = activities.some((a: any) => a.type === 'explanation' || a.type === 'example');
+
+    if (hasSlides) {
+      return activities.map((a: any) =>
+        a.type === 'explanation' || a.type === 'example'
+          ? { ...a, _kind: 'slide' as const }
+          : { ...a, _kind: 'activity' as const }
+      );
+    }
+
+    // Prepend default intro slides for lessons without content slides
+    const slides: LessonStep[] = INTRO_SLIDES.map(s => ({ ...s, _kind: 'slide' as const }));
+    const acts: LessonStep[] = activities.map((a: any) => ({ ...a, _kind: 'activity' as const }));
+    return [...slides, ...acts];
+  }, [lesson]);
+
+  const currentStep = steps[currentIdx];
 
   useEffect(() => {
-    if (lesson && currentActivity?.type === 'match_pairs' && currentActivity.pairs) {
-      const indices = currentActivity.pairs.map((_, i) => i);
+    if (currentStep?._kind === 'activity' && currentStep.type === 'match_pairs' && currentStep.pairs) {
+      const indices = currentStep.pairs.map((_: any, i: number) => i);
       setShuffledRight(indices.sort(() => Math.random() - 0.5));
       setMatchedPairs(new Set());
       setMatchSelected(null);
     }
-  }, [currentIdx, lesson]);
+  }, [currentIdx, steps.length]);
 
   if (!lesson || lessonLoading) return <LessonSkeleton />;
 
-  const activities = lesson.activity_data;
-  const progressPct = ((currentIdx + (answered ? 1 : 0)) / activities.length) * 100;
+  const totalSteps = steps.length;
+  const isContentSlide = currentStep?._kind === 'slide';
+  const progressPct = ((currentIdx + (isContentSlide || answered ? 1 : 0)) / totalSteps) * 100;
 
   const checkAnswer = (correct: boolean) => {
     setAnswered(true);
@@ -63,22 +90,23 @@ export default function LessonPage() {
   const handleMultipleChoice = (idx: number) => {
     if (answered) return;
     setSelectedOption(idx);
-    checkAnswer(idx === currentActivity!.correct);
+    checkAnswer(idx === (currentStep as Activity).correct);
   };
 
   const handleTrueFalse = (val: boolean) => {
     if (answered) return;
-    checkAnswer(val === currentActivity!.correct);
+    checkAnswer(val === (currentStep as Activity).correct);
   };
 
   const handleFillBlank = () => {
     if (answered) return;
-    const correct = fillAnswer.trim().toLowerCase() === (currentActivity!.answer ?? '').toLowerCase();
+    const correct = fillAnswer.trim().toLowerCase() === ((currentStep as Activity).answer ?? '').toLowerCase();
     checkAnswer(correct);
   };
 
   const handleMatchClick = (side: 'left' | 'right', idx: number) => {
-    if (!currentActivity!.pairs) return;
+    const activity = currentStep as Activity;
+    if (!activity.pairs) return;
     if (matchedPairs.has(idx) && side === 'left') return;
 
     if (!matchSelected) {
@@ -93,7 +121,7 @@ export default function LessonPage() {
         const newMatched = new Set(matchedPairs);
         newMatched.add(leftIdx);
         setMatchedPairs(newMatched);
-        if (newMatched.size === currentActivity!.pairs!.length) {
+        if (newMatched.size === activity.pairs!.length) {
           checkAnswer(true);
         }
       }
@@ -101,40 +129,50 @@ export default function LessonPage() {
     }
   };
 
-  const nextActivity = async () => {
-    if (currentIdx + 1 >= activities.length) {
-      try {
-        const oldXp = profile?.xp_total ?? 0;
-        const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
-        await refetchProfile();
-        const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
-        toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
+  const goToStep = async (direction: 'next' | 'prev') => {
+    if (direction === 'next') {
+      if (currentIdx + 1 >= totalSteps) {
+        // Lesson complete
+        try {
+          const oldXp = profile?.xp_total ?? 0;
+          const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
+          await refetchProfile();
+          const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
+          toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
 
-        // Check XP milestone bonus (1 FinCoin per 100 XP crossed)
-        const milestoneCoins = Math.floor((oldXp + result.xpEarned) / 100) - Math.floor(oldXp / 100);
-        if (milestoneCoins > 0) {
-          setTimeout(() => {
-            toast('🪙 Parabéns! Você acumulou +100 XP e ganhou 1 FinCoin!', {
-              duration: 3000,
-              style: {
-                background: 'hsl(var(--primary))',
-                color: 'hsl(var(--primary-foreground))',
-                border: 'none',
-              },
-            });
-          }, 1500);
+          const milestoneCoins = Math.floor((oldXp + result.xpEarned) / 100) - Math.floor(oldXp / 100);
+          if (milestoneCoins > 0) {
+            setTimeout(() => {
+              toast('🪙 Parabéns! Você acumulou +100 XP e ganhou 1 FinCoin!', {
+                duration: 3000,
+                style: {
+                  background: 'hsl(var(--primary))',
+                  color: 'hsl(var(--primary-foreground))',
+                  border: 'none',
+                },
+              });
+            }, 1500);
+          }
+        } catch {
+          toast.error('Erro ao salvar progresso');
         }
-      } catch {
-        toast.error('Erro ao salvar progresso');
+        navigate('/learn');
+        return;
       }
-      navigate('/learn');
-    } else {
+
+      setSlideDirection('left');
       setCurrentIdx(i => i + 1);
-      setAnswered(false);
-      setIsCorrect(false);
-      setSelectedOption(null);
-      setFillAnswer('');
+    } else {
+      if (currentIdx <= 0) return;
+      setSlideDirection('right');
+      setCurrentIdx(i => i - 1);
     }
+
+    // Reset activity state
+    setAnswered(false);
+    setIsCorrect(false);
+    setSelectedOption(null);
+    setFillAnswer('');
   };
 
   if (hearts <= 0) return <NoHeartsScreen onBack={() => navigate('/learn')} />;
@@ -143,30 +181,44 @@ export default function LessonPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <LessonHeader hearts={hearts} progressPct={progressPct} onClose={() => navigate('/learn')} />
 
-      <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-6">
-        <ActivityContent
-          activity={currentActivity!}
-          answered={answered}
-          isCorrect={isCorrect}
-          selectedOption={selectedOption}
-          fillAnswer={fillAnswer}
-          matchSelected={matchSelected}
-          matchedPairs={matchedPairs}
-          shuffledRight={shuffledRight}
-          onMultipleChoice={handleMultipleChoice}
-          onTrueFalse={handleTrueFalse}
-          onFillChange={setFillAnswer}
-          onFillSubmit={handleFillBlank}
-          onMatchClick={handleMatchClick}
-        />
+      <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-6 overflow-hidden">
+        <div
+          key={currentIdx}
+          className={slideDirection === 'left' ? 'animate-slide-in-left' : 'animate-slide-in-right'}
+        >
+          {isContentSlide ? (
+            (currentStep as ContentSlide).type === 'explanation' ? (
+              <ExplanationSlide slide={currentStep as ContentSlide} />
+            ) : (
+              <ExampleSlide slide={currentStep as ContentSlide} />
+            )
+          ) : (
+            <ActivityContent
+              activity={currentStep as Activity}
+              answered={answered}
+              isCorrect={isCorrect}
+              selectedOption={selectedOption}
+              fillAnswer={fillAnswer}
+              matchSelected={matchSelected}
+              matchedPairs={matchedPairs}
+              shuffledRight={shuffledRight}
+              onMultipleChoice={handleMultipleChoice}
+              onTrueFalse={handleTrueFalse}
+              onFillChange={setFillAnswer}
+              onFillSubmit={handleFillBlank}
+              onMatchClick={handleMatchClick}
+            />
+          )}
+        </div>
 
         <LessonFooter
           answered={answered}
           isCorrect={isCorrect}
-          activity={currentActivity!}
-          isLastActivity={currentIdx + 1 >= activities.length}
+          activity={isContentSlide ? null : (currentStep as Activity)}
+          isContentSlide={isContentSlide}
+          isLastActivity={currentIdx + 1 >= totalSteps}
           isPending={completeLesson.isPending}
-          onNext={nextActivity}
+          onNext={() => goToStep('next')}
         />
       </div>
     </div>

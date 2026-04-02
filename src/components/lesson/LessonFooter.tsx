@@ -5,13 +5,27 @@ import type { Activity } from './types';
 interface LessonFooterProps {
   answered: boolean;
   isCorrect: boolean;
-  activity: Activity;
+  activity: Activity | null;
+  isContentSlide: boolean;
   isLastActivity: boolean;
   isPending: boolean;
   onNext: () => void;
 }
 
-export function LessonFooter({ answered, isCorrect, activity, isLastActivity, isPending, onNext }: LessonFooterProps) {
+export function LessonFooter({ answered, isCorrect, activity, isContentSlide, isLastActivity, isPending, onNext }: LessonFooterProps) {
+  // Content slide: always show "Continuar"
+  if (isContentSlide) {
+    return (
+      <Button
+        onClick={onNext}
+        className="w-full h-12 animate-fade-in"
+      >
+        Continuar
+        <ArrowRight className="h-4 w-4 ml-2" />
+      </Button>
+    );
+  }
+
   if (!answered) return null;
 
   return (
@@ -35,7 +49,7 @@ export function LessonFooter({ answered, isCorrect, activity, isLastActivity, is
             </>
           )}
         </div>
-        {activity.explanation && (
+        {activity?.explanation && (
           <p className="text-sm text-muted-foreground mt-1">{activity.explanation}</p>
         )}
       </div>
