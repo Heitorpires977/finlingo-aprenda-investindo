@@ -19,6 +19,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Clear session on fresh tab if user chose not to be remembered
+    const remember = localStorage.getItem('finlingo-remember');
+    if (remember === 'false') {
+      // sessionStorage flag survives reloads but not new tabs
+      if (!sessionStorage.getItem('finlingo-session-active')) {
+        supabase.auth.signOut();
+        localStorage.removeItem('finlingo-remember');
+        setLoading(false);
+        // Still set up listener below
+      }
+    }
+    sessionStorage.setItem('finlingo-session-active', 'true');
+
+    // Set up auth listener BEFORE getSession (per Supabase best practice)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -49,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    localStorage.removeItem('finlingo-remember');
+    sessionStorage.removeItem('finlingo-session-active');
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
