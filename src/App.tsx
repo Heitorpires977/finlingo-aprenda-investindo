@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import LearnPage from "./pages/LearnPage";
 import LessonPage from "./pages/LessonPage";
+import ModuleLessonPage from "./pages/ModuleLessonPage";
 import ShopPage from "./pages/ShopPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -36,6 +37,7 @@ const AppRoutes = () => (
     <Route path="/auth" element={<AuthPage />} />
     <Route path="/learn" element={<ProtectedRoute><LearnPage /></ProtectedRoute>} />
     <Route path="/lesson/:id" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
+    <Route path="/modulo/:slug" element={<ProtectedRoute><ModuleLessonPage /></ProtectedRoute>} />
     <Route path="/shop" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
     <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
