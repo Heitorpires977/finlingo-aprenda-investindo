@@ -2,9 +2,8 @@ import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useCompleteLessonMutation } from '@/hooks/useGameData';
+import { useProfile } from '@/hooks/useGameData';
 import { toast } from 'sonner';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { StepRenderer } from '@/components/lesson/StepRenderer';
@@ -33,7 +32,6 @@ function CompletionScreen({ title, xpEarned, onContinue }: { title: string; xpEa
           <p className="text-sm text-muted-foreground">Continue assim e conquiste seu próximo marco!</p>
         </div>
 
-        {/* Confetti-like decorations */}
         <div className="flex justify-center gap-3 text-3xl">
           {['🎊', '🏆', '⭐', '🎊'].map((e, i) => (
             <span key={i} className="animate-bounce-in" style={{ animationDelay: `${i * 0.15}s` }}>{e}</span>
@@ -54,20 +52,34 @@ export default function ModuleLessonPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: profile, refetch: refetchProfile } = useProfile();
-
-  const lesson = modulo1Content.find(l => l.slug === slug);
+  const { data: profile } = useProfile();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [stepSolved, setStepSolved] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
-  const [hearts, setHearts] = useState(profile?.effectiveHearts ?? profile?.hearts ?? 5);
+  const [hearts, setHearts] = useState(5);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+
+  const lesson = modulo1Content.find(l => l.slug === slug);
 
   const handleSolved = useCallback(() => {
     setStepSolved(true);
   }, []);
+
+  const handleNext = () => {
+    if (!lesson) return;
+    if (currentIdx + 1 >= lesson.steps.length) {
+      const earned = lesson.steps.length * 5;
+      setXpEarned(earned);
+      setCompleted(true);
+      toast.success(`Lição completa! +${earned} XP 🎉`);
+      return;
+    }
+    setSlideDirection('left');
+    setCurrentIdx(i => i + 1);
+    setStepSolved(false);
+  };
 
   if (!lesson) {
     return (
@@ -81,27 +93,6 @@ export default function ModuleLessonPage() {
     );
   }
 
-  const steps = lesson?.steps ?? [];
-  const totalSteps = steps.length;
-  const currentStep = steps[currentIdx];
-  const isContent = currentStep?.type === 'explanation' || currentStep?.type === 'example';
-  const progressPct = totalSteps > 0 ? ((currentIdx + (stepSolved ? 1 : 0)) / totalSteps) * 100 : 0;
-
-  if (!lesson) {
-    if (currentIdx + 1 >= totalSteps) {
-      // Module complete!
-      const earned = totalSteps * 5; // 5 XP per step
-      setXpEarned(earned);
-      setCompleted(true);
-      toast.success(`Lição completa! +${earned} XP 🎉`);
-      return;
-    }
-
-    setSlideDirection('left');
-    setCurrentIdx(i => i + 1);
-    setStepSolved(false);
-  };
-
   if (completed) {
     return (
       <CompletionScreen
@@ -112,16 +103,21 @@ export default function ModuleLessonPage() {
     );
   }
 
+  const steps = lesson.steps;
+  const totalSteps = steps.length;
+  const currentStep = steps[currentIdx];
+  const isContent = currentStep.type === 'explanation' || currentStep.type === 'example';
+  const progressPct = ((currentIdx + (stepSolved ? 1 : 0)) / totalSteps) * 100;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <LessonHeader hearts={hearts} progressPct={progressPct} onClose={() => navigate('/learn')} />
+      <LessonHeader hearts={profile?.effectiveHearts ?? hearts} progressPct={progressPct} onClose={() => navigate('/learn')} />
 
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-6 overflow-hidden">
         <div key={currentIdx} className={slideDirection === 'left' ? 'animate-slide-in-left' : 'animate-slide-in-right'}>
           <StepRenderer step={currentStep} onSolved={handleSolved} />
         </div>
 
-        {/* Next button — only when step is solved */}
         {stepSolved && (
           <Button
             onClick={handleNext}
