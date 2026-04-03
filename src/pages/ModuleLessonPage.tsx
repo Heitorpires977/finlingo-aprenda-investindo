@@ -81,17 +81,13 @@ export default function ModuleLessonPage() {
     );
   }
 
-  const steps = lesson.steps;
+  const steps = lesson?.steps ?? [];
   const totalSteps = steps.length;
   const currentStep = steps[currentIdx];
-  const isContent = currentStep.type === 'explanation' || currentStep.type === 'example';
-  const progressPct = ((currentIdx + (stepSolved ? 1 : 0)) / totalSteps) * 100;
+  const isContent = currentStep?.type === 'explanation' || currentStep?.type === 'example';
+  const progressPct = totalSteps > 0 ? ((currentIdx + (stepSolved ? 1 : 0)) / totalSteps) * 100 : 0;
 
-  const handleSolved = useCallback(() => {
-    setStepSolved(true);
-  }, []);
-
-  const handleNext = async () => {
+  if (!lesson) {
     if (currentIdx + 1 >= totalSteps) {
       // Module complete!
       const earned = totalSteps * 5; // 5 XP per step
