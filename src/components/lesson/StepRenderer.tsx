@@ -1,12 +1,30 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BookOpen, Lightbulb, CheckCircle, XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { Step } from '@/data/lessons/modulo1';
+
+const STEP_HEADERS: Record<Step['type'], { icon: string; label: string }> = {
+  explanation: { icon: '📖', label: 'Hora de Aprender' },
+  example: { icon: '💡', label: 'Na Prática' },
+  activity: { icon: '🧠', label: 'Teste seu Conhecimento' },
+  true_false: { icon: '⚖️', label: 'Verdadeiro ou Falso?' },
+  match_pairs: { icon: '🔗', label: 'Jogo de Conexão' },
+};
+
+function StepHeader({ type }: { type: Step['type'] }) {
+  const header = STEP_HEADERS[type];
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      <span className="text-lg">{header.icon}</span>
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{header.label}</span>
+    </div>
+  );
+}
 
 /* ─── Explanation Slide ─── */
 function ExplanationStep({ step }: { step: Step }) {
   return (
     <div className="space-y-5 animate-fade-in">
+      <StepHeader type="explanation" />
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
           {step.emoji || <BookOpen className="h-6 w-6 text-primary" />}
@@ -26,6 +44,7 @@ function ExplanationStep({ step }: { step: Step }) {
 function ExampleStep({ step }: { step: Step }) {
   return (
     <div className="space-y-5 animate-fade-in">
+      <StepHeader type="example" />
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 rounded-2xl bg-accent/15 flex items-center justify-center text-2xl">
           {step.emoji || <Lightbulb className="h-6 w-6 text-accent" />}
@@ -67,6 +86,7 @@ function ActivityStep({ step, onSolved }: { step: Step; onSolved: () => void }) 
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <StepHeader type="activity" />
       <h2 className="text-xl font-black text-foreground">{step.question}</h2>
       <div className="space-y-3">
         {step.options?.map((opt, i) => (
@@ -118,6 +138,7 @@ function TrueFalseStep({ step, onSolved }: { step: Step; onSolved: () => void })
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <StepHeader type="true_false" />
       <h2 className="text-xl font-black text-foreground">{step.statement}</h2>
       <div className="flex gap-4">
         {([{ label: 'Verdadeiro', value: 1 }, { label: 'Falso', value: 0 }] as const).map(({ label, value }) => (
@@ -193,6 +214,7 @@ function MatchPairsStep({ step, onSolved }: { step: Step; onSolved: () => void }
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <StepHeader type="match_pairs" />
       <h2 className="text-xl font-black text-foreground">Conecte os termos às definições</h2>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
@@ -253,7 +275,6 @@ interface StepRendererProps {
 }
 
 export function StepRenderer({ step, onSolved }: StepRendererProps) {
-  // Content slides are always "solved" immediately
   useEffect(() => {
     if (step.type === 'explanation' || step.type === 'example') {
       onSolved();
