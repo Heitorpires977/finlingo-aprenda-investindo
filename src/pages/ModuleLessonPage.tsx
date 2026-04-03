@@ -62,13 +62,12 @@ export default function ModuleLessonPage() {
   const [stepSolved, setStepSolved] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
-  const [hearts, setHearts] = useState(5);
+  const [hearts, setHearts] = useState(profile?.effectiveHearts ?? profile?.hearts ?? 5);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
-  // Sync hearts from profile
-  useState(() => {
-    if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
-  });
+  const handleSolved = useCallback(() => {
+    setStepSolved(true);
+  }, []);
 
   if (!lesson) {
     return (
