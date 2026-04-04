@@ -10,8 +10,7 @@ import { ExplanationSlide } from '@/components/lesson/ExplanationSlide';
 import { ExampleSlide } from '@/components/lesson/ExampleSlide';
 import { LessonSkeleton } from '@/components/lesson/LessonSkeleton';
 import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
-import type { LessonStep, Activity, ContentSlide, DEFAULT_INTRO_SLIDES } from '@/components/lesson/types';
-import { DEFAULT_INTRO_SLIDES as INTRO_SLIDES } from '@/components/lesson/types';
+import type { LessonStep, Activity, ContentSlide } from '@/components/lesson/types';
 
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
