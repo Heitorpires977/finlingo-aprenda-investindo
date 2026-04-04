@@ -1,4 +1,5 @@
-// src/data/lessons/modulo1.ts
+// src/data/lessons/modulo1/lessons.ts
+// Módulo 1 — Introdução ao Mercado Financeiro (1.1 a 1.11)
 
 export interface MatchPair {
   term: string;
@@ -7,20 +8,15 @@ export interface MatchPair {
 
 export interface Step {
   type: "explanation" | "example" | "activity" | "true_false" | "match_pairs";
-  // explanation / example
   title?: string;
   body?: string;
   highlight?: string;
   emoji?: string;
-  // activity (multiple choice)
   question?: string;
   options?: string[];
   correct?: number;
-  // true_false
   statement?: string;
   explanation?: string;
-  // true_false correct reuses the boolean below
-  // match_pairs
   pairs?: MatchPair[];
 }
 

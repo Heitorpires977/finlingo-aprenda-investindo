@@ -10,8 +10,7 @@ import { ExplanationSlide } from '@/components/lesson/ExplanationSlide';
 import { ExampleSlide } from '@/components/lesson/ExampleSlide';
 import { LessonSkeleton } from '@/components/lesson/LessonSkeleton';
 import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
-import type { LessonStep, Activity, ContentSlide, DEFAULT_INTRO_SLIDES } from '@/components/lesson/types';
-import { DEFAULT_INTRO_SLIDES as INTRO_SLIDES } from '@/components/lesson/types';
+import type { LessonStep, Activity, ContentSlide } from '@/components/lesson/types';
 
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,10 +53,9 @@ export default function LessonPage() {
       );
     }
 
-    // Prepend default intro slides for lessons without content slides
-    const slides: LessonStep[] = INTRO_SLIDES.map(s => ({ ...s, _kind: 'slide' as const }));
+    // No default slides — just use activities directly
     const acts: LessonStep[] = activities.map((a: any) => ({ ...a, _kind: 'activity' as const }));
-    return [...slides, ...acts];
+    return acts;
   }, [lesson]);
 
   const currentStep = steps[currentIdx];

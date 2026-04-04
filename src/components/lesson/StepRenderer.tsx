@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BookOpen, Lightbulb, CheckCircle, XCircle } from 'lucide-react';
-import type { Step } from '@/data/lessons/modulo1';
+import type { Step } from '@/data/lessons';
 
 const STEP_HEADERS: Record<Step['type'], { icon: string; label: string }> = {
   explanation: { icon: '📖', label: 'Hora de Aprender' },
@@ -127,7 +127,7 @@ function ActivityStep({ step, onSolved }: { step: Step; onSolved: () => void }) 
 function TrueFalseStep({ step, onSolved }: { step: Step; onSolved: () => void }) {
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
-  const correctVal = step.correct as number; // 0 = false, 1 = true
+  const correctVal = step.correct as number;
 
   const handleSelect = (val: number) => {
     if (answered) return;
