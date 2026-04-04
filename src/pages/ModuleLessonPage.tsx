@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { StepRenderer } from '@/components/lesson/StepRenderer';
-import { modulo1Content } from '@/data/lessons/modulo1';
+import { allModules } from '@/data/lessons';
 
 /* ─── Completion Screen ─── */
 function CompletionScreen({ title, xpEarned, onContinue }: { title: string; xpEarned: number; onContinue: () => void }) {
@@ -61,7 +61,20 @@ export default function ModuleLessonPage() {
   const [hearts, setHearts] = useState(5);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
-  const lesson = modulo1Content.find(l => l.slug === slug);
+  // Reset legacy progress on first load
+  useEffect(() => {
+    const resetKey = 'finlingo-progress-reset-v2';
+    if (!localStorage.getItem(resetKey)) {
+      localStorage.removeItem('lesson-progress');
+      localStorage.removeItem('finlingo-lesson-progress');
+      localStorage.setItem(resetKey, 'true');
+    }
+  }, []);
+
+  // Find lesson across all modules
+  const lesson = allModules
+    .flatMap(m => m.lessons)
+    .find(l => l.slug === slug);
 
   const handleSolved = useCallback(() => {
     setStepSolved(true);
