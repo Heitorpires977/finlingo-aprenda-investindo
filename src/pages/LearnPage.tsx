@@ -3,9 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useDailyQuests } from '@/hooks/useGameData';
 import { CheckCircle, Lock, Star, Zap, Target } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
+import { allModules } from '@/data/lessons';
+import { useMemo } from 'react';
 
 const SECTION_COLORS = ['bg-primary', 'bg-secondary'];
 const SECTION_ICONS = ['💰', '📊'];
+
+function getDayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
 
 export default function LearnPage() {
   const { data: lessons, isLoading } = useLessons();
@@ -13,6 +22,27 @@ export default function LearnPage() {
   const { data: profile } = useProfile();
   const { data: quests } = useDailyQuests();
   const navigate = useNavigate();
+
+  // Get today's quest based on day of year rotation
+  const todayQuest = useMemo(() => {
+    if (!quests || quests.length === 0) return null;
+    const dayIndex = getDayOfYear() % quests.length;
+    const sorted = [...quests].sort((a, b) => ((a as any).day_index ?? 0) - ((b as any).day_index ?? 0));
+    return sorted[dayIndex] || quests[0];
+  }, [quests]);
+
+  // Build a slug map from allModules for studyflow navigation
+  const moduleSlugMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allModules.forEach(m => {
+      m.lessons.forEach(l => {
+        // Map by lesson title prefix (e.g. "1.1") to slug
+        const match = l.title.match(/^(\d+\.\d+)/);
+        if (match) map.set(match[1], l.slug);
+      });
+    });
+    return map;
+  }, []);
 
   if (isLoading) {
     return (
@@ -36,11 +66,9 @@ export default function LearnPage() {
 
   const isLessonUnlocked = (sectionId: number, lessonNumber: number) => {
     if (sectionId === 1 && lessonNumber === 1) return true;
-    // Previous lesson in same section must be completed
     const sectionLessons = lessons?.filter(l => l.section_id === sectionId) ?? [];
     const prevLesson = sectionLessons.find(l => l.lesson_number === lessonNumber - 1);
     if (prevLesson && completedIds.has(prevLesson.id)) return true;
-    // First lesson of section: previous section's last lesson must be completed
     if (lessonNumber === 1 && sectionId > 1) {
       const prevSectionLessons = lessons?.filter(l => l.section_id === sectionId - 1) ?? [];
       const lastLesson = prevSectionLessons[prevSectionLessons.length - 1];
@@ -49,24 +77,58 @@ export default function LearnPage() {
     return false;
   };
 
+  // Try to find the slug for a lesson title to route to studyflow
+  const getLessonSlug = (title: string): string | null => {
+    const match = title.match(/^(\d+\.\d+)/);
+    if (match) return moduleSlugMap.get(match[1]) ?? null;
+    return null;
+  };
+
+  const handleLessonClick = (lesson: any, unlocked: boolean) => {
+    if (!unlocked) return;
+    const slug = getLessonSlug(lesson.title);
+    if (slug) {
+      navigate(`/modulo/${slug}`);
+    } else {
+      navigate(`/lesson/${lesson.id}`);
+    }
+  };
+
+  // Check if today's quest is "completed" (simple heuristic based on profile data)
+  const isQuestCompleted = todayQuest && profile ? (() => {
+    const q = todayQuest as any;
+    switch (q.requirement_type) {
+      case 'lessons_completed': return (completedIds.size >= q.requirement_value);
+      case 'xp_earned': return ((profile.xp_total ?? 0) >= q.requirement_value);
+      case 'streak_maintain': return ((profile.streak_current ?? 0) >= q.requirement_value);
+      default: return false;
+    }
+  })() : false;
+
   return (
     <AppLayout>
       <div className="space-y-8">
-        {/* Daily quests preview */}
-        <div className="bg-card rounded-2xl border p-4 space-y-3">
-          <div className="flex items-center gap-2 font-bold text-foreground">
-            <Target className="h-5 w-5 text-accent" />
-            Missões Diárias
+        {/* Daily quest */}
+        {todayQuest && (
+          <div className={`bg-card rounded-2xl border p-4 space-y-3 transition-all ${
+            isQuestCompleted ? 'animate-quest-complete border-finlingo-coins' : ''
+          }`}>
+            <div className="flex items-center gap-2 font-bold text-foreground">
+              <Target className="h-5 w-5 text-accent" />
+              Missão Diária
+            </div>
+            <div className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ${
+              isQuestCompleted ? 'bg-finlingo-coins/10' : 'bg-muted'
+            }`}>
+              <span>{(todayQuest as any).description}</span>
+              {isQuestCompleted ? (
+                <span className="font-bold text-finlingo-coins animate-fade-in">✅ Completa!</span>
+              ) : (
+                <span className="font-bold text-finlingo-xp">+{(todayQuest as any).xp_reward} XP</span>
+              )}
+            </div>
           </div>
-          <div className="space-y-2">
-            {quests?.slice(0, 2).map(q => (
-              <div key={q.id} className="flex items-center justify-between bg-muted rounded-xl px-3 py-2 text-sm">
-                <span>{q.description}</span>
-                <span className="font-bold text-finlingo-xp">+{q.xp_reward} XP</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* XP progress */}
         {profile && (
@@ -98,7 +160,6 @@ export default function LearnPage() {
               </div>
             </div>
 
-            {/* Lesson path */}
             <div className="flex flex-col items-center gap-3">
               {section.lessons?.map((lesson) => {
                 const completed = completedIds.has(lesson.id);
@@ -108,7 +169,7 @@ export default function LearnPage() {
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => unlocked && navigate(`/lesson/${lesson.id}`)}
+                    onClick={() => handleLessonClick(lesson, unlocked)}
                     disabled={!unlocked}
                     className={`w-full max-w-sm flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
                       completed
