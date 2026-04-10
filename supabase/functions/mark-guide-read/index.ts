@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GUIDE_READ_XP = 5;
+const GUIDE_READ_XP = 50;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -37,7 +37,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: corsHeaders });
     }
 
-    // Validate guide exists
     const { data: guide, error: guideError } = await supabaseAdmin
       .from("technical_guides")
       .select("id, lesson_id")
@@ -47,7 +46,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Guide not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Validate lesson is completed (security: can't mark unearned guides)
     const { data: lessonProgress } = await supabaseAdmin
       .from("user_lesson_progress")
       .select("completed")
@@ -59,7 +57,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Lesson not completed" }), { status: 403, headers: corsHeaders });
     }
 
-    // Idempotency: already read?
     const { data: existing } = await supabaseAdmin
       .from("user_guide_reads")
       .select("id")
@@ -72,13 +69,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Record the read
     await supabaseAdmin.from("user_guide_reads").insert({
       user_id: userId,
       guide_id: guideId,
     });
 
-    // Award XP bonus
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("xp_total, xp_weekly")
@@ -90,7 +85,6 @@ Deno.serve(async (req) => {
       xp_weekly: (profile?.xp_weekly ?? 0) + GUIDE_READ_XP,
     }).eq("id", userId);
 
-    // Check for 'Estudioso' badge
     let badgeEarned = false;
     const { data: allReads } = await supabaseAdmin
       .from("user_guide_reads")
@@ -101,7 +95,6 @@ Deno.serve(async (req) => {
       .select("id");
 
     if (allReads && totalGuides && allReads.length >= totalGuides.length && totalGuides.length > 0) {
-      // Find the badge
       const { data: badge } = await supabaseAdmin
         .from("badges")
         .select("id")

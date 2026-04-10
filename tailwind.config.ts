@@ -121,6 +121,11 @@ export default {
           "0%": { opacity: "0", transform: "translateX(-40px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        "quest-complete": {
+          "0%": { boxShadow: "0 0 0 0 hsl(var(--finlingo-coins) / 0.6)" },
+          "50%": { boxShadow: "0 0 20px 4px hsl(var(--finlingo-coins) / 0.4)" },
+          "100%": { boxShadow: "0 0 0 0 hsl(var(--finlingo-coins) / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -133,6 +138,7 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "slide-in-left": "slide-in-left 0.35s ease-out",
         "slide-in-right": "slide-in-right 0.35s ease-out",
+        "quest-complete": "quest-complete 1s ease-out 1",
       },
     },
   },

@@ -29,7 +29,6 @@ Deno.serve(async (req) => {
     }
     const userId = user.id;
 
-    // Validate input
     const body = await req.json();
     const lessonId = typeof body.lessonId === "string" ? body.lessonId.trim() : null;
     const mistakes = typeof body.mistakes === "number" ? Math.max(0, Math.floor(body.mistakes)) : null;
@@ -37,7 +36,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: corsHeaders });
     }
 
-    // Idempotency: check if lesson already completed
     const { data: existingProgress } = await supabaseAdmin
       .from("user_lesson_progress")
       .select("completed")
@@ -51,7 +49,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate lesson exists
     const { data: lesson, error: lessonError } = await supabaseAdmin
       .from("lessons")
       .select("id, xp_reward, section_id, lesson_number, is_quiz")
@@ -61,7 +58,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Lesson not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Validate lesson is unlocked
     if (!(lesson.section_id === 1 && lesson.lesson_number === 1)) {
       const { data: prevLesson } = await supabaseAdmin
         .from("lessons")
@@ -106,7 +102,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get profile and compute effective hearts with auto-refill
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("*")
@@ -116,7 +111,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Profile not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Compute effective hearts
     const elapsed = Date.now() - new Date(profile.hearts_updated_at ?? Date.now()).getTime();
     const effectiveHearts = Math.min(5, (profile.hearts ?? 0) + Math.floor(elapsed / (30 * 60 * 1000)));
 
@@ -154,7 +148,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert lesson progress
     await supabaseAdmin
       .from("user_lesson_progress")
       .upsert({
@@ -166,7 +159,6 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
       }, { onConflict: "user_id,lesson_id" });
 
-    // Update profile
     await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
 
     return new Response(JSON.stringify({ success: true, xpEarned: totalXp, coinsEarned, perfect }), {
