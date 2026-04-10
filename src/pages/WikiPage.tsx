@@ -159,7 +159,7 @@ export default function WikiPage() {
                     className="gap-2"
                   >
                     <BookOpen className="h-4 w-4" />
-                    {markRead.isPending ? 'Salvando...' : 'Marcar como Lido (+5 XP)'}
+                    {markRead.isPending ? 'Salvando...' : 'Marcar como Lido (+50 XP)'}
                   </Button>
                 </>
               )}
@@ -220,7 +220,7 @@ export default function WikiPage() {
               </div>
               {guide.unlocked && !guide.read && (
                 <div className="mt-2 text-xs text-primary font-semibold">
-                  Toque para ler → +5 XP
+                  Toque para ler → +50 XP
                 </div>
               )}
             </button>

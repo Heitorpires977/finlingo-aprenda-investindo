@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const SHOP_ITEMS: Record<string, { price: number }> = {
-  heart_refill: { price: 10 },
+  heart_refill: { price: 3 },
   xp_boost: { price: 50 },
   streak_freeze: { price: 20 },
 };
@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid item" }), { status: 400, headers: corsHeaders });
     }
 
-    // Idempotency check: look for recent identical transaction (within 10 seconds)
     if (idempotencyKey) {
       const { data: existing } = await supabaseAdmin
         .from("transactions")
@@ -58,7 +57,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Server-side balance check
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("fincoins, hearts, hearts_updated_at, xp_boost_until")
@@ -83,7 +81,6 @@ Deno.serve(async (req) => {
       updates.xp_boost_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
 
-    // Record transaction with idempotency key
     await supabaseAdmin.from("transactions").insert({
       user_id: userId,
       item_type: idempotencyKey ? `${itemType}:${idempotencyKey}` : itemType,

@@ -9,7 +9,7 @@ const SHOP_ITEMS = [
     id: 'heart_refill',
     name: 'Recarga de Corações',
     description: 'Restaura todos os 5 corações',
-    price: 10,
+    price: 3,
     icon: Heart,
     color: 'text-finlingo-hearts',
   },
