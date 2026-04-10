@@ -43,6 +43,7 @@ export type Database = {
       }
       daily_quests: {
         Row: {
+          day_index: number | null
           description: string
           fincoin_reward: number
           id: string
@@ -51,6 +52,7 @@ export type Database = {
           xp_reward: number
         }
         Insert: {
+          day_index?: number | null
           description: string
           fincoin_reward: number
           id?: string
@@ -59,6 +61,7 @@ export type Database = {
           xp_reward: number
         }
         Update: {
+          day_index?: number | null
           description?: string
           fincoin_reward?: number
           id?: string
