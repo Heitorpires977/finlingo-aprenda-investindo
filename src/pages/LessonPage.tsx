@@ -22,7 +22,8 @@ export default function LessonPage() {
   const { data: lesson, isLoading: lessonLoading } = useLesson(id);
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [hearts, setHearts] = useState(5);
+  const [hearts, setHearts] = useState(0);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [answered, setAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -34,7 +35,10 @@ export default function LessonPage() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   useEffect(() => {
-    if (profile) setHearts(profile.effectiveHearts ?? profile.hearts);
+    if (profile) {
+      setHearts(profile.effectiveHearts ?? profile.hearts ?? 0);
+      setProfileLoaded(true);
+    }
   }, [profile]);
 
   // Build unified steps: intro slides + activities
@@ -138,7 +142,7 @@ export default function LessonPage() {
           console.log('Complete lesson result:', result);
           await refetchProfile();
           const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
-          toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
+          toast.success(`Atividade concluída! +${result.xpEarned} XP${coinMsg} 🎉`);
 
           const milestoneCoins = Math.floor((oldXp + result.xpEarned) / 100) - Math.floor(oldXp / 100);
           if (milestoneCoins > 0) {
@@ -175,6 +179,15 @@ export default function LessonPage() {
     setSelectedOption(null);
     setFillAnswer('');
   };
+
+  // Show loading while profile loads (to check hearts)
+  if (!profileLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
 
   if (hearts <= 0) return <NoHeartsScreen onBack={() => navigate('/learn')} />;
 
