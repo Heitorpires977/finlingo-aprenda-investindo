@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { StepRenderer } from '@/components/lesson/StepRenderer';
+import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
 import { allModules } from '@/data/lessons';
 
 /* ─── Completion Screen ─── */
@@ -59,6 +60,7 @@ export default function ModuleLessonPage() {
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [stepSolved, setStepSolved] = useState(false);
+  const [answered, setAnswered] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [hearts, setHearts] = useState(5);
@@ -70,6 +72,13 @@ export default function ModuleLessonPage() {
       setHearts(profile.effectiveHearts ?? profile.hearts ?? 5);
     }
   }, [profile]);
+
+  // Check for no hearts
+  useEffect(() => {
+    if (hearts <= 0) {
+      navigate('/learn');
+    }
+  }, [hearts, navigate]);
 
   // Reset legacy progress on first load
   useEffect(() => {
@@ -88,6 +97,10 @@ export default function ModuleLessonPage() {
 
   const handleSolved = useCallback(() => {
     setStepSolved(true);
+  }, []);
+
+  const handleAnswered = useCallback(() => {
+    setAnswered(true);
   }, []);
 
   const handleWrong = useCallback(() => {
@@ -135,6 +148,7 @@ export default function ModuleLessonPage() {
     setSlideDirection('left');
     setCurrentIdx(i => i + 1);
     setStepSolved(false);
+    setAnswered(false);
   };
 
   if (!lesson) {
@@ -163,7 +177,7 @@ export default function ModuleLessonPage() {
   const totalSteps = steps.length;
   const currentStep = steps[currentIdx];
   const isContent = currentStep.type === 'explanation' || currentStep.type === 'example';
-  const progressPct = ((currentIdx + (stepSolved ? 1 : 0)) / totalSteps) * 100;
+  const progressPct = ((currentIdx + (answered ? 1 : 0)) / totalSteps) * 100;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -171,14 +185,19 @@ export default function ModuleLessonPage() {
 
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-6 overflow-hidden">
         <div key={currentIdx} className={slideDirection === 'left' ? 'animate-slide-in-left' : 'animate-slide-in-right'}>
-          <StepRenderer step={currentStep} onSolved={handleSolved} onWrong={handleWrong} />
+          <StepRenderer 
+            step={currentStep} 
+            onSolved={handleSolved} 
+            onWrong={handleWrong}
+            onAnswered={handleAnswered}
+          />
         </div>
 
-        {stepSolved && (
+        {answered && (
           <Button
             onClick={handleNext}
             className="w-full h-12 animate-fade-in"
-            variant={isContent ? 'default' : 'success'}
+            variant={stepSolved ? 'success' : 'default'}
           >
             {currentIdx + 1 >= totalSteps ? 'Finalizar Módulo' : 'Continuar'}
             <ArrowRight className="h-4 w-4 ml-2" />
