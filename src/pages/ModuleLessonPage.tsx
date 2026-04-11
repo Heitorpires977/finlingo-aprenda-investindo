@@ -169,7 +169,8 @@ export default function ModuleLessonPage() {
   const totalSteps = steps.length;
   const currentStep = steps[currentIdx];
   const isContent = currentStep.type === 'explanation' || currentStep.type === 'example';
-  const progressPct = ((currentIdx + (answered ? 1 : 0)) / totalSteps) * 100;
+  const canContinue = isContent ? stepSolved : answered;
+  const progressPct = ((currentIdx + (canContinue ? 1 : 0)) / totalSteps) * 100;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -185,7 +186,7 @@ export default function ModuleLessonPage() {
           />
         </div>
 
-        {answered && (
+        {canContinue && (
           <Button
             onClick={handleNext}
             className="w-full h-12 animate-fade-in"
