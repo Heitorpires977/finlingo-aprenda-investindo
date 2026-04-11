@@ -23,6 +23,12 @@ export default function LearnPage() {
   const { data: quests } = useDailyQuests();
   const navigate = useNavigate();
 
+  const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToCurrentMission = () => {
+    firstIncompleteSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const todayQuest = useMemo(() => {
     if (!quests || quests.length === 0) return null;
     const dayIndex = getDayOfYear() % quests.length;
@@ -53,11 +59,6 @@ export default function LearnPage() {
 
   const completedIds = new Set(progress?.filter(p => p.completed).map(p => p.lesson_id) ?? []);
   
-  const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
-  
-  const scrollToCurrentMission = () => {
-    firstIncompleteSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
   const sections = new Map<number, { title: string; lessons: typeof lessons }>();
 
   lessons?.forEach(l => {
@@ -157,8 +158,9 @@ export default function LearnPage() {
         )}
 
         {Array.from(sections.entries()).map(([sectionId, section], idx) => {
-          const hasIncomplete = section.lessons?.some(l => !completedIds.has(l.id));
-          const shouldRef = hasIncomplete && !firstIncompleteSectionRef.current;
+          const firstIncomplete = section.lessons?.find(l => !completedIds.has(l.id));
+          const isUnlocked = firstIncomplete ? isLessonUnlocked(sectionId, firstIncomplete.lesson_number) : false;
+          const shouldRef = firstIncomplete && isUnlocked && !firstIncompleteSectionRef.current;
 
           return (
             <div
