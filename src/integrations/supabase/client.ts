@@ -8,11 +8,31 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Custom storage que tenta localStorage primeiro, cai para sessionStorage
+const customStorage = {
+  getItem: (key: string) => {
+    const value = localStorage.getItem(key);
+    if (value === null) {
+      return sessionStorage.getItem(key);
+    }
+    return value;
+  },
+  setItem: (key: string, value: string) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  },
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: customStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
   // Headers de segurança adicionais
   global: {
