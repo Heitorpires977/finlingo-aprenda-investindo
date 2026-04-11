@@ -123,7 +123,7 @@ export function useLessonProgress() {
   });
 }
 
-// Server-side validated lesson completion
+// Server-side validated lesson completion using database function
 export function useCompleteLessonMutation() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -132,9 +132,13 @@ export function useCompleteLessonMutation() {
     mutationFn: async ({ lessonId, mistakes }: { lessonId: string; mistakes: number }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.functions.invoke('complete-lesson', {
-        body: { lessonId, mistakes },
+      // Use database function instead of Edge Function
+      const { data, error } = await supabase.rpc('complete_lesson_v2', {
+        p_user_id: user.id,
+        p_lesson_id: lessonId,
+        p_mistakes: mistakes,
       });
+      
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data as { success: boolean; xpEarned: number; coinsEarned: number; perfect: boolean };
@@ -146,7 +150,7 @@ export function useCompleteLessonMutation() {
   });
 }
 
-// Server-side validated heart loss
+// Server-side validated heart loss using database function
 export function useLoseHeartMutation() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -154,9 +158,12 @@ export function useLoseHeartMutation() {
   return useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase.functions.invoke('lose-heart', {
-        body: {},
+
+      // Use database function instead of Edge Function
+      const { data, error } = await supabase.rpc('lose_heart_v2', {
+        p_user_id: user.id,
       });
+      
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data as { success: boolean; hearts: number };
