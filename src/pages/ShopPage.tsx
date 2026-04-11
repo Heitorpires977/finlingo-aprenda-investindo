@@ -45,8 +45,9 @@ export default function ShopPage() {
     try {
       await purchase.mutateAsync(item.id);
       toast.success(`${item.name} comprado! 🎉`);
-    } catch {
-      toast.error('Erro ao comprar item');
+    } catch (err: any) {
+      console.error('Shop purchase error:', err);
+      toast.error(err?.message || 'Erro ao comprar item');
     }
   };
 
