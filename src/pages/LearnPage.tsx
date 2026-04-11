@@ -226,8 +226,8 @@ export default function LearnPage() {
                 );
               })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </AppLayout>
   );
