@@ -72,7 +72,7 @@ function ExampleStep({ step }: { step: Step }) {
 }
 
 /* ─── Multiple Choice Activity ─── */
-function ActivityStep({ step, onSolved, onWrong }: { step: Step; onSolved: () => void; onWrong: () => void }) {
+function ActivityStep({ step, onSolved, onWrong, onAnswered }: { step: Step; onSolved: () => void; onWrong: () => void; onAnswered: () => void }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const isCorrect = selected === step.correct;
@@ -81,6 +81,7 @@ function ActivityStep({ step, onSolved, onWrong }: { step: Step; onSolved: () =>
     if (answered) return;
     setSelected(idx);
     setAnswered(true);
+    onAnswered();
     if (idx === step.correct) {
       onSolved();
     } else {
@@ -128,7 +129,7 @@ function ActivityStep({ step, onSolved, onWrong }: { step: Step; onSolved: () =>
 }
 
 /* ─── True / False ─── */
-function TrueFalseStep({ step, onSolved, onWrong }: { step: Step; onSolved: () => void; onWrong: () => void }) {
+function TrueFalseStep({ step, onSolved, onWrong, onAnswered }: { step: Step; onSolved: () => void; onWrong: () => void; onAnswered: () => void }) {
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const correctVal = step.correct as number;
@@ -137,6 +138,7 @@ function TrueFalseStep({ step, onSolved, onWrong }: { step: Step; onSolved: () =
     if (answered) return;
     setSelected(val);
     setAnswered(true);
+    onAnswered();
     if (val === correctVal) {
       onSolved();
     } else {
@@ -185,7 +187,7 @@ function TrueFalseStep({ step, onSolved, onWrong }: { step: Step; onSolved: () =
 }
 
 /* ─── Match Pairs ─── */
-function MatchPairsStep({ step, onSolved, onWrong }: { step: Step; onSolved: () => void; onWrong: () => void }) {
+function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; onSolved: () => void; onWrong: () => void; onAnswered: () => void }) {
   const pairs = step.pairs!;
   const shuffledRight = useMemo(() => {
     const indices = pairs.map((_, i) => i);
@@ -212,6 +214,7 @@ function MatchPairsStep({ step, onSolved, onWrong }: { step: Step; onSolved: () 
       } else {
         setWrongPair(true);
         onWrong();
+        onAnswered();
         setTimeout(() => setWrongPair(false), 600);
       }
       setTimeout(() => {
@@ -282,9 +285,10 @@ interface StepRendererProps {
   step: Step;
   onSolved: () => void;
   onWrong: () => void;
+  onAnswered: () => void;
 }
 
-export function StepRenderer({ step, onSolved, onWrong }: StepRendererProps) {
+export function StepRenderer({ step, onSolved, onWrong, onAnswered }: StepRendererProps) {
   useEffect(() => {
     if (step.type === 'explanation' || step.type === 'example') {
       onSolved();
@@ -297,11 +301,11 @@ export function StepRenderer({ step, onSolved, onWrong }: StepRendererProps) {
     case 'example':
       return <ExampleStep step={step} />;
     case 'activity':
-      return <ActivityStep step={step} onSolved={onSolved} onWrong={onWrong} />;
+      return <ActivityStep step={step} onSolved={onSolved} onWrong={onWrong} onAnswered={onAnswered} />;
     case 'true_false':
-      return <TrueFalseStep step={step} onSolved={onSolved} onWrong={onWrong} />;
+      return <TrueFalseStep step={step} onSolved={onSolved} onWrong={onWrong} onAnswered={onAnswered} />;
     case 'match_pairs':
-      return <MatchPairsStep step={step} onSolved={onSolved} onWrong={onWrong} />;
+      return <MatchPairsStep step={step} onSolved={onSolved} onWrong={onWrong} onAnswered={onAnswered} />;
     default:
       return null;
   }
