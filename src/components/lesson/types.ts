@@ -1,5 +1,5 @@
 export interface Activity {
-  type: string;
+  type: 'multiple_choice' | 'true_false' | 'fill_blank' | 'match_pairs' | 'activity';
   question: string;
   options?: string[];
   correct?: number | boolean;
