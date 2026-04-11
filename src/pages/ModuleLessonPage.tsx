@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { StepRenderer } from '@/components/lesson/StepRenderer';
-import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
 import { allModules } from '@/data/lessons';
 
 /* ─── Completion Screen ─── */
@@ -66,34 +65,11 @@ export default function ModuleLessonPage() {
   const [hearts, setHearts] = useState(5);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
-  // Sync hearts from profile
   useEffect(() => {
     if (profile) {
       setHearts(profile.effectiveHearts ?? profile.hearts ?? 5);
     }
   }, [profile]);
-
-  // Check for no hearts
-  useEffect(() => {
-    if (hearts <= 0) {
-      navigate('/learn');
-    }
-  }, [hearts, navigate]);
-
-  // Reset legacy progress on first load
-  useEffect(() => {
-    const resetKey = 'finlingo-progress-reset-v2';
-    if (!localStorage.getItem(resetKey)) {
-      localStorage.removeItem('lesson-progress');
-      localStorage.removeItem('finlingo-lesson-progress');
-      localStorage.setItem(resetKey, 'true');
-    }
-  }, []);
-
-  // Find lesson across all modules
-  const lesson = allModules
-    .flatMap(m => m.lessons)
-    .find(l => l.slug === slug);
 
   const handleSolved = useCallback(() => {
     setStepSolved(true);
@@ -150,6 +126,11 @@ export default function ModuleLessonPage() {
     setStepSolved(false);
     setAnswered(false);
   };
+
+  // Find lesson across all modules
+  const lesson = allModules
+    .flatMap(m => m.lessons)
+    .find(l => l.slug === slug);
 
   if (!lesson) {
     return (
