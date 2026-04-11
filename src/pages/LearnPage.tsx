@@ -167,67 +167,67 @@ export default function LearnPage() {
 
         {/* Sections */}
         {Array.from(sections.entries()).map(([sectionId, section], idx) => {
-          // Check if this section has any incomplete lesson
-          const hasIncomplete = section.lessons?.some(l => !completedIds.has(l.id));
+          const hasIncomplete = section.lessons!.some(l => !completedIds.has(l.id));
           const shouldRef = hasIncomplete && !firstIncompleteSectionRef.current;
-          
+
           return (
-          <div 
-            key={sectionId} 
-            className="space-y-4"
-            ref={shouldRef ? firstIncompleteSectionRef : undefined}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-2xl ${SECTION_COLORS[idx % 2]} flex items-center justify-center text-2xl shadow-md`}>
-                {SECTION_ICONS[idx % 2]}
+            <div
+              key={sectionId}
+              className="space-y-4"
+              ref={shouldRef ? firstIncompleteSectionRef : undefined}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl ${SECTION_COLORS[idx % 2]} flex items-center justify-center text-2xl shadow-md`}>
+                  {SECTION_ICONS[idx % 2]}
+                </div>
+                <div>
+                  <h2 className="font-black text-lg text-foreground">Seção {sectionId}</h2>
+                  <p className="text-sm text-muted-foreground">{section.title}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-black text-lg text-foreground">Seção {sectionId}</h2>
-                <p className="text-sm text-muted-foreground">{section.title}</p>
+
+              <div className="flex flex-col items-center gap-3">
+                {section.lessons!.map((lesson) => {
+                  const completed = completedIds.has(lesson.id);
+                  const unlocked = isLessonUnlocked(sectionId, lesson.lesson_number);
+                  const perfect = progress?.find(p => p.lesson_id === lesson.id)?.perfect;
+
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => handleLessonClick(lesson, unlocked)}
+                      disabled={!unlocked}
+                      className={`w-full max-w-sm flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                        completed
+                          ? 'bg-finlingo-correct/10 border-finlingo-correct shadow-sm'
+                          : unlocked
+                          ? 'bg-card border-primary/30 hover:border-primary hover:shadow-md cursor-pointer animate-pulse-glow'
+                          : 'bg-muted/50 border-border opacity-60 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black ${
+                        completed
+                          ? 'bg-finlingo-correct text-primary-foreground'
+                          : unlocked
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {completed ? <CheckCircle className="h-6 w-6" /> : unlocked ? lesson.lesson_number : <Lock className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-foreground">{lesson.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {lesson.is_quiz ? '📝 Quiz' : `📖 ${((lesson.activity_data as unknown[]) || []).length} atividades`} · +{lesson.xp_reward} XP
+                        </p>
+                      </div>
+                      {perfect && <Star className="h-5 w-5 text-finlingo-coins fill-current" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            <div className="flex flex-col items-center gap-3">
-              {section.lessons?.map((lesson) => {
-                const completed = completedIds.has(lesson.id);
-                const unlocked = isLessonUnlocked(sectionId, lesson.lesson_number);
-                const perfect = progress?.find(p => p.lesson_id === lesson.id)?.perfect;
-
-                return (
-                  <button
-                    key={lesson.id}
-                    onClick={() => handleLessonClick(lesson, unlocked)}
-                    disabled={!unlocked}
-                    className={`w-full max-w-sm flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
-                      completed
-                        ? 'bg-finlingo-correct/10 border-finlingo-correct shadow-sm'
-                        : unlocked
-                        ? 'bg-card border-primary/30 hover:border-primary hover:shadow-md cursor-pointer animate-pulse-glow'
-                        : 'bg-muted/50 border-border opacity-60 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black ${
-                      completed
-                        ? 'bg-finlingo-correct text-primary-foreground'
-                        : unlocked
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {completed ? <CheckCircle className="h-6 w-6" /> : unlocked ? lesson.lesson_number : <Lock className="h-5 w-5" />}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-foreground">{lesson.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {lesson.is_quiz ? '📝 Quiz' : `📖 ${((lesson.activity_data as unknown[]) || []).length} atividades`} · +{lesson.xp_reward} XP
-                      </p>
-                    </div>
-                    {perfect && <Star className="h-5 w-5 text-finlingo-coins fill-current" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </AppLayout>
   );
