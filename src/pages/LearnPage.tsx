@@ -1,20 +1,18 @@
 import { useLessons, useLessonProgress, useProfile } from '@/hooks/useGameData';
 import { useNavigate } from 'react-router-dom';
 import { useDailyQuests } from '@/hooks/useGameData';
-import { CheckCircle, Lock, Star, Zap, Target } from 'lucide-react';
+import { CheckCircle, Lock, Star, Zap, Target, Play } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { allModules } from '@/data/lessons';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 
 const SECTION_COLORS = ['bg-primary', 'bg-secondary'];
 const SECTION_ICONS = ['💰', '📊'];
 
-// Get current day index based on UTC date
-function getUTCDayOfYear() {
+function getDayOfYear() {
   const now = new Date();
-  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const start = new Date(Date.UTC(utcDate.getFullYear(), 0, 0));
-  const diff = utcDate.getTime() - start.getTime();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
@@ -25,11 +23,10 @@ export default function LearnPage() {
   const { data: quests } = useDailyQuests();
   const navigate = useNavigate();
 
-  // Get today's quest based on UTC day of year rotation
+  // Get today's quest based on day of year rotation
   const todayQuest = useMemo(() => {
     if (!quests || quests.length === 0) return null;
-    const utcDay = getUTCDayOfYear();
-    const dayIndex = utcDay % quests.length;
+    const dayIndex = getDayOfYear() % quests.length;
     const sorted = [...quests].sort((a, b) => ((a as any).day_index ?? 0) - ((b as any).day_index ?? 0));
     return sorted[dayIndex] || quests[0];
   }, [quests]);
@@ -39,6 +36,7 @@ export default function LearnPage() {
     const map = new Map<string, string>();
     allModules.forEach(m => {
       m.lessons.forEach(l => {
+        // Map by lesson title prefix (e.g. "1.1") to slug
         const match = l.title.match(/^(\d+\.\d+)/);
         if (match) map.set(match[1], l.slug);
       });
@@ -57,6 +55,13 @@ export default function LearnPage() {
   }
 
   const completedIds = new Set(progress?.filter(p => p.completed).map(p => p.lesson_id) ?? []);
+  
+  // Find first incomplete lesson for "continue" button
+  const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToCurrentMission = () => {
+    firstIncompleteSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
   const sections = new Map<number, { title: string; lessons: typeof lessons }>();
 
   lessons?.forEach(l => {
@@ -79,6 +84,7 @@ export default function LearnPage() {
     return false;
   };
 
+  // Try to find the slug for a lesson title to route to studyflow
   const getLessonSlug = (title: string): string | null => {
     const match = title.match(/^(\d+\.\d+)/);
     if (match) return moduleSlugMap.get(match[1]) ?? null;
@@ -95,12 +101,12 @@ export default function LearnPage() {
     }
   };
 
-  // Check if today's quest is completed (fix: use correct requirement_type)
+  // Check if today's quest is "completed" (simple heuristic based on profile data)
   const isQuestCompleted = todayQuest && profile ? (() => {
     const q = todayQuest as any;
     switch (q.requirement_type) {
-      case 'lessons': return (completedIds.size >= q.requirement_value);
-      case 'xp': return ((profile.xp_weekly ?? 0) >= q.requirement_value);
+      case 'lessons_completed': return (completedIds.size >= q.requirement_value);
+      case 'xp_earned': return ((profile.xp_total ?? 0) >= q.requirement_value);
       case 'streak_maintain': return ((profile.streak_current ?? 0) >= q.requirement_value);
       default: return false;
     }
@@ -108,6 +114,17 @@ export default function LearnPage() {
 
   return (
     <AppLayout>
+      {/* Botão flutuante para ir para missão atual */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={scrollToCurrentMission}
+          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-4 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"
+        >
+          <Play className="h-5 w-5" />
+          <span>Continuar</span>
+        </button>
+      </div>
+      
       <div className="space-y-8">
         {/* Daily quest */}
         {todayQuest && (
@@ -149,8 +166,17 @@ export default function LearnPage() {
         )}
 
         {/* Sections */}
-        {Array.from(sections.entries()).map(([sectionId, section], idx) => (
-          <div key={sectionId} className="space-y-4">
+        {Array.from(sections.entries()).map(([sectionId, section], idx) => {
+          // Check if this section has any incomplete lesson
+          const hasIncomplete = section.lessons?.some(l => !completedIds.has(l.id));
+          const shouldRef = hasIncomplete && !firstIncompleteSectionRef.current;
+          
+          return (
+          <div 
+            key={sectionId} 
+            className="space-y-4"
+            ref={shouldRef ? firstIncompleteSectionRef : undefined}
+          >
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-2xl ${SECTION_COLORS[idx % 2]} flex items-center justify-center text-2xl shadow-md`}>
                 {SECTION_ICONS[idx % 2]}
@@ -200,8 +226,8 @@ export default function LearnPage() {
                 );
               })}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </AppLayout>
   );
