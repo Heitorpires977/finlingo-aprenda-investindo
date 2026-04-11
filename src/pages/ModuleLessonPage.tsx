@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useCompleteLessonMutation } from '@/hooks/useGameData';
+import { useProfile, useCompleteLessonMutation, useLoseHeartMutation } from '@/hooks/useGameData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -55,6 +55,7 @@ export default function ModuleLessonPage() {
   const { user } = useAuth();
   const { data: profile, refetch: refetchProfile } = useProfile();
   const completeLesson = useCompleteLessonMutation();
+  const loseHeart = useLoseHeartMutation();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [stepSolved, setStepSolved] = useState(false);
@@ -62,6 +63,13 @@ export default function ModuleLessonPage() {
   const [xpEarned, setXpEarned] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+
+  // Sync hearts from profile
+  useEffect(() => {
+    if (profile) {
+      setHearts(profile.effectiveHearts ?? profile.hearts ?? 5);
+    }
+  }, [profile]);
 
   // Reset legacy progress on first load
   useEffect(() => {
@@ -82,16 +90,19 @@ export default function ModuleLessonPage() {
     setStepSolved(true);
   }, []);
 
+  const handleWrong = useCallback(() => {
+    setHearts(h => Math.max(0, h - 1));
+    loseHeart.mutate();
+  }, [loseHeart]);
+
   const handleNext = async () => {
     if (!lesson) return;
     if (currentIdx + 1 >= lesson.steps.length) {
-      // Calculate mistakes based on step types
       const totalSteps = lesson.steps.length;
-      const earned = totalSteps * 5; // Simplified: 5 XP per step
+      const earned = totalSteps * 5;
       
       if (user) {
         try {
-          // Match slug to lesson title in database
           const lessonTitle = lesson.title;
           const { data: lessonsData } = await supabase
             .from('lessons')
@@ -156,11 +167,11 @@ export default function ModuleLessonPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <LessonHeader hearts={profile?.effectiveHearts ?? hearts} progressPct={progressPct} onClose={() => navigate('/learn')} />
+      <LessonHeader hearts={hearts} progressPct={progressPct} onClose={() => navigate('/learn')} />
 
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-6 overflow-hidden">
         <div key={currentIdx} className={slideDirection === 'left' ? 'animate-slide-in-left' : 'animate-slide-in-right'}>
-          <StepRenderer step={currentStep} onSolved={handleSolved} />
+          <StepRenderer step={currentStep} onSolved={handleSolved} onWrong={handleWrong} />
         </div>
 
         {stepSolved && (
