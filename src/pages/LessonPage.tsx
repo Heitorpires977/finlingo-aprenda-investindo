@@ -132,8 +132,10 @@ export default function LessonPage() {
       if (currentIdx + 1 >= totalSteps) {
         // Lesson complete
         try {
+          console.log('Complete lesson called with id:', id, 'mistakes:', mistakes);
           const oldXp = profile?.xp_total ?? 0;
           const result = await completeLesson.mutateAsync({ lessonId: id!, mistakes });
+          console.log('Complete lesson result:', result);
           await refetchProfile();
           const coinMsg = result.coinsEarned > 0 ? ` e +${result.coinsEarned} 🪙` : '';
           toast.success(`Lição completa! +${result.xpEarned} XP${coinMsg} 🎉`);
@@ -151,8 +153,9 @@ export default function LessonPage() {
               });
             }, 1500);
           }
-        } catch {
-          toast.error('Erro ao salvar progresso');
+        } catch (err: any) {
+          console.error('Error completing lesson:', err);
+          toast.error('Erro ao salvar progresso: ' + (err?.message || err));
         }
         navigate('/learn');
         return;
