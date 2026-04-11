@@ -23,7 +23,6 @@ export default function LearnPage() {
   const { data: quests } = useDailyQuests();
   const navigate = useNavigate();
 
-  // Get today's quest based on day of year rotation
   const todayQuest = useMemo(() => {
     if (!quests || quests.length === 0) return null;
     const dayIndex = getDayOfYear() % quests.length;
@@ -31,12 +30,10 @@ export default function LearnPage() {
     return sorted[dayIndex] || quests[0];
   }, [quests]);
 
-  // Build a slug map from allModules for studyflow navigation
   const moduleSlugMap = useMemo(() => {
     const map = new Map<string, string>();
     allModules.forEach(m => {
       m.lessons.forEach(l => {
-        // Map by lesson title prefix (e.g. "1.1") to slug
         const match = l.title.match(/^(\d+\.\d+)/);
         if (match) map.set(match[1], l.slug);
       });
@@ -56,7 +53,6 @@ export default function LearnPage() {
 
   const completedIds = new Set(progress?.filter(p => p.completed).map(p => p.lesson_id) ?? []);
   
-  // Find first incomplete lesson for "continue" button
   const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
   
   const scrollToCurrentMission = () => {
@@ -84,7 +80,6 @@ export default function LearnPage() {
     return false;
   };
 
-  // Try to find the slug for a lesson title to route to studyflow
   const getLessonSlug = (title: string): string | null => {
     const match = title.match(/^(\d+\.\d+)/);
     if (match) return moduleSlugMap.get(match[1]) ?? null;
@@ -101,7 +96,6 @@ export default function LearnPage() {
     }
   };
 
-  // Check if today's quest is "completed" (simple heuristic based on profile data)
   const isQuestCompleted = todayQuest && profile ? (() => {
     const q = todayQuest as any;
     switch (q.requirement_type) {
@@ -114,7 +108,6 @@ export default function LearnPage() {
 
   return (
     <AppLayout>
-      {/* Botão flutuante para ir para missão atual */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={scrollToCurrentMission}
@@ -126,7 +119,6 @@ export default function LearnPage() {
       </div>
       
       <div className="space-y-8">
-        {/* Daily quest */}
         {todayQuest && (
           <div className={`bg-card rounded-2xl border p-4 space-y-3 transition-all ${
             isQuestCompleted ? 'animate-quest-complete border-finlingo-coins' : ''
@@ -148,7 +140,6 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* XP progress */}
         {profile && (
           <div className="bg-card rounded-2xl border p-4 space-y-2">
             <div className="flex items-center justify-between">
@@ -165,9 +156,8 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* Sections */}
         {Array.from(sections.entries()).map(([sectionId, section], idx) => {
-          const hasIncomplete = section.lessons!.some(l => !completedIds.has(l.id));
+          const hasIncomplete = section.lessons?.some(l => !completedIds.has(l.id));
           const shouldRef = hasIncomplete && !firstIncompleteSectionRef.current;
 
           return (
@@ -187,7 +177,7 @@ export default function LearnPage() {
               </div>
 
               <div className="flex flex-col items-center gap-3">
-                {section.lessons!.map((lesson) => {
+                {section.lessons?.map((lesson) => {
                   const completed = completedIds.has(lesson.id);
                   const unlocked = isLessonUnlocked(sectionId, lesson.lesson_number);
                   const perfect = progress?.find(p => p.lesson_id === lesson.id)?.perfect;
