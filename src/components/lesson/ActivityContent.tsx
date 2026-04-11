@@ -172,11 +172,14 @@ interface ActivityContentProps {
 export function ActivityContent(props: ActivityContentProps) {
   const { activity } = props;
 
+  // Support both "activity" and "multiple_choice" types
+  const activityType = activity.type === 'activity' ? 'multiple_choice' : activity.type;
+
   return (
     <>
       <h2 className="text-xl font-black text-foreground animate-fade-in">{activity.question}</h2>
 
-      {activity.type === 'multiple_choice' && (
+      {activityType === 'multiple_choice' && (
         <MultipleChoice
           activity={activity}
           answered={props.answered}
@@ -186,11 +189,11 @@ export function ActivityContent(props: ActivityContentProps) {
         />
       )}
 
-      {activity.type === 'true_false' && (
+      {activityType === 'true_false' && (
         <TrueFalse activity={activity} answered={props.answered} onSelect={props.onTrueFalse} />
       )}
 
-      {activity.type === 'fill_blank' && (
+      {activityType === 'fill_blank' && (
         <FillBlank
           answered={props.answered}
           fillAnswer={props.fillAnswer}
@@ -199,7 +202,7 @@ export function ActivityContent(props: ActivityContentProps) {
         />
       )}
 
-      {activity.type === 'match_pairs' && (
+      {activityType === 'match_pairs' && (
         <MatchPairs
           activity={activity}
           answered={props.answered}
