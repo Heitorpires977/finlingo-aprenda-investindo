@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { StepRenderer } from '@/components/lesson/StepRenderer';
+import { NoHeartsScreen } from '@/components/lesson/NoHeartsScreen';
 import { allModules } from '@/data/lessons';
 
 /* ─── Completion Screen ─── */
@@ -62,7 +63,8 @@ export default function ModuleLessonPage() {
   const [answered, setAnswered] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
-  const [hearts, setHearts] = useState(5);
+  const [hearts, setHearts] = useState(0);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   // Reset legacy progress on first load
@@ -78,7 +80,8 @@ export default function ModuleLessonPage() {
   // Sync hearts from profile
   useEffect(() => {
     if (profile) {
-      setHearts(profile.effectiveHearts ?? profile.hearts ?? 5);
+      setHearts(profile.effectiveHearts ?? profile.hearts ?? 0);
+      setProfileLoaded(true);
     }
   }, [profile]);
 
@@ -171,6 +174,20 @@ export default function ModuleLessonPage() {
   const isContent = currentStep.type === 'explanation' || currentStep.type === 'example';
   const canContinue = isContent ? stepSolved : answered;
   const progressPct = ((currentIdx + (canContinue ? 1 : 0)) / totalSteps) * 100;
+
+  // Show loading while profile loads (to check hearts)
+  if (!profileLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
+
+  // Block if no hearts
+  if (hearts <= 0) {
+    return <NoHeartsScreen onBack={() => navigate('/learn')} />;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
