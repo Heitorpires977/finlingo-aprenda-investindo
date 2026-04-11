@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Chrome } from 'lucide-react';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -44,22 +42,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    try {
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/learn',
-        },
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao login com Google';
-      toast.error(msg);
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
@@ -92,17 +74,6 @@ export default function AuthPage() {
               Criar Conta
             </button>
           </div>
-
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full h-12 text-base"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-          >
-            <Chrome className="mr-2 h-5 w-5" />
-            Continue com Google
-          </Button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
