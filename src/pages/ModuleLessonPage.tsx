@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Trophy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useGameData';
+import { useProfile, useCompleteLessonMutation } from '@/hooks/useGameData';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
@@ -52,7 +53,8 @@ export default function ModuleLessonPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile, refetch: refetchProfile } = useProfile();
+  const completeLesson = useCompleteLessonMutation();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [stepSolved, setStepSolved] = useState(false);
@@ -80,13 +82,43 @@ export default function ModuleLessonPage() {
     setStepSolved(true);
   }, []);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!lesson) return;
     if (currentIdx + 1 >= lesson.steps.length) {
-      const earned = lesson.steps.length * 5;
-      setXpEarned(earned);
+      // Calculate mistakes based on step types
+      const totalSteps = lesson.steps.length;
+      const earned = totalSteps * 5; // Simplified: 5 XP per step
+      
+      if (user) {
+        try {
+          // Match slug to lesson title in database
+          const lessonTitle = lesson.title;
+          const { data: lessonsData } = await supabase
+            .from('lessons')
+            .select('id')
+            .ilike('title', `%${lessonTitle}%`)
+            .limit(1);
+          
+          if (lessonsData && lessonsData.length > 0) {
+            const result = await completeLesson.mutateAsync({
+              lessonId: lessonsData[0].id,
+              mistakes: 0
+            });
+            await refetchProfile();
+            setXpEarned(result.xpEarned);
+          } else {
+            setXpEarned(earned);
+          }
+        } catch (err) {
+          console.error('Error saving progress:', err);
+          setXpEarned(earned);
+        }
+      } else {
+        setXpEarned(earned);
+      }
+      
       setCompleted(true);
-      toast.success(`Lição completa! +${earned} XP 🎉`);
+      toast.success(`Lição completa! +${xpEarned || earned} XP 🎉`);
       return;
     }
     setSlideDirection('left');
