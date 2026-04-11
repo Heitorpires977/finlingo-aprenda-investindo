@@ -36,7 +36,7 @@ export default function AuthPage() {
       navigate('/learn');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
-      if (msg.includes('USERNAME_BLOCKED')) {
+      if (msg.includes('USERNAME_BLOCKED') || msg.includes('palavras não permitidas') || msg.includes('Database error')) {
         toast.error('Nome de usuário não permitido. Escolha outro.');
       } else {
         toast.error(msg);
