@@ -179,13 +179,14 @@ export function useShopPurchaseMutation() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
+return useMutation({
     mutationFn: async (itemType: string) => {
       if (!user) throw new Error('Not authenticated');
-      const idempotencyKey = crypto.randomUUID();
-      const { data, error } = await supabase.functions.invoke('shop-purchase', {
-        body: { itemType, idempotencyKey },
+      console.log('Calling purchase_item RPC with itemType:', itemType);
+      const { data, error } = await supabase.rpc('purchase_item', {
+        p_item_type: itemType,
       });
+      console.log('purchase_item response:', data, error);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
