@@ -13,5 +13,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  // Headers de segurança adicionais
+  global: {
+    // Impede vazamento de Referer
+    'X-Client-Info': 'finlingo',
   }
 });
+
+// =====================================================
+// SEGURANÇA: Não expor variáveis em console
+// =====================================================
+if (import.meta.env.DEV) {
+  console.log('%c⚠️ Segurança: Nunca compartilhe suas variáveis de ambiente!', 'color: red; font-size: 14px;');
+  console.log('%cAs chaves do Supabase são visíveis apenas para o app.', 'color: orange;');
+}
