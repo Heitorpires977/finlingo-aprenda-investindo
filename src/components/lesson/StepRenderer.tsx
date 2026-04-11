@@ -210,7 +210,10 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
         const newMatched = new Set(matched);
         newMatched.add(selectedLeft);
         setMatched(newMatched);
-        if (newMatched.size === pairs.length) onSolved();
+        if (newMatched.size === pairs.length) {
+          onSolved();
+          onAnswered();
+        }
       } else {
         setWrongPair(true);
         onWrong();
@@ -222,7 +225,7 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
         setSelectedRight(null);
       }, 300);
     }
-  }, [selectedLeft, selectedRight]);
+  }, [selectedLeft, selectedRight, shuffledRight, matched, pairs.length, onSolved, onWrong, onAnswered]);
 
   return (
     <div className="space-y-4 animate-fade-in">
