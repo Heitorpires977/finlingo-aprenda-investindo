@@ -6,6 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
+const BLOCKED_WORDS = [
+  'nazi', 'nazista', 'hitler', 'reich', 'racismo', 'racista', 'supremacia',
+  'pedofilia', 'pedofilo', 'pedophile', 'puta', 'puto', 'merda', 'fdp',
+  'estupro', 'estuprador', 'golpe', 'scam', 'fraude', 'terrorismo',
+  'suicida', 'macaco', 'negro', 'preto', 'viado', 'bicha', 'traveco'
+];
+
+function validateUsername(username: string): boolean {
+  const normalized = username.toLowerCase()
+    .replace(/@/g, 'a').replace(/4/g, 'a').replace(/1/g, 'i')
+    .replace(/0/g, 'o').replace(/3/g, 'e').replace(/5/g, 's')
+    .replace(/7/g, 't').replace(/8/g, 'b').replace(/\$/g, 's')
+    .replace(/[^a-z0-9]/g, '');
+  return !BLOCKED_WORDS.some(word => normalized.includes(word));
+}
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -29,6 +45,11 @@ export default function AuthPage() {
         }
         toast.success('Bem-vindo de volta!');
       } else {
+        if (!validateUsername(username)) {
+          toast.error('Nome de usuário não permitido. Escolha outro.');
+          setLoading(false);
+          return;
+        }
         await signUp(email, password, username);
         localStorage.setItem('finlingo-remember', 'true');
         toast.success('Conta criada com sucesso!');
@@ -36,8 +57,10 @@ export default function AuthPage() {
       navigate('/learn');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
-      if (msg.includes('USERNAME_BLOCKED') || msg.includes('palavras não permitidas') || msg.includes('Database error')) {
+      if (msg.includes('USERNAME_BLOCKED') || msg.includes('palavras não permitidas')) {
         toast.error('Nome de usuário não permitido. Escolha outro.');
+      } else if (msg.includes('rate limit')) {
+        toast.error('Tente novamente em alguns segundos.');
       } else {
         toast.error(msg);
       }
