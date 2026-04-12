@@ -61,6 +61,8 @@ export default function AuthPage() {
         toast.error('Nome de usuário não permitido. Escolha outro.');
       } else if (msg.includes('rate limit')) {
         toast.error('Tente novamente em alguns segundos.');
+      } else if (msg.includes('already been registered') || msg.includes('already exists') || msg.includes('User already registered')) {
+        toast.error('Este email já possui uma conta. Faça login.');
       } else {
         toast.error(msg);
       }
