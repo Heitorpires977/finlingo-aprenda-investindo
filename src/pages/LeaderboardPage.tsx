@@ -26,9 +26,9 @@ const BADGE_MAP: Record<string, { text: string; class: string }> = {
   'Espresso': { text: '☕', class: 'bg-amber-700 text-white' },
   'Master': { text: 'Master', class: 'bg-purple-600 text-white' },
   'CIBED': { text: 'CIBED', class: 'bg-green-600 text-white' },
-  'Island': { text: 'Island', class: 'bg-cyan-500 text-white' },
-  'Empreg': { text: '💼', class: 'bg-gray-600 text-white' },
-  'Pulta': { text: 'Pulta Méo', class: 'bg-pink-500 text-white' },
+  'Island': { text: 'Islaicedi', class: 'bg-cyan-500 text-white' },
+  'Empreg': { text: 'Emergente', class: 'bg-gray-600 text-white' },
+  'Pulta': { text: 'Pulta MEO🎯', class: 'bg-pink-500 text-white' },
   'Condado': { text: 'Condado', class: 'bg-red-400 text-white' },
 };
 
