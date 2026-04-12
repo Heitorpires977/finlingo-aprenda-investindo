@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { BookOpen, Trophy, ShoppingBag, User, Flame, Heart, Coins, GraduationCap } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading } = useProfile();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -15,15 +15,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 text-sm font-bold">
             <div className="flex items-center gap-1 text-finlingo-streak">
               <Flame className="h-4 w-4" />
-              <span>{profile?.streak_current ?? 0}</span>
+              <span>{isLoading ? '...' : (profile?.streak_current ?? 0)}</span>
             </div>
             <div className="flex items-center gap-1 text-finlingo-hearts">
               <Heart className="h-4 w-4 fill-current" />
-              <span>{profile?.effectiveHearts ?? profile?.hearts ?? 5}</span>
+              <span>{isLoading ? '...' : (profile?.effectiveHearts ?? profile?.hearts ?? 5)}</span>
             </div>
             <div className="flex items-center gap-1 text-finlingo-coins">
               <Coins className="h-4 w-4" />
-              <span>{profile?.fincoins ?? 0}</span>
+              <span>{isLoading ? '...' : (profile?.fincoins ?? 0)}</span>
             </div>
           </div>
         </div>
