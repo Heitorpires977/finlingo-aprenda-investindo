@@ -88,7 +88,10 @@ export default function ModuleLessonPage() {
   // Find lesson across all modules
   const lesson = allModules
     .flatMap(m => m.lessons)
-    .find(l => l.slug === slug);
+    .find(l => {
+      const lessonSlug = l.slug || l.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-');
+      return lessonSlug === slug;
+    });
 
   const handleSolved = useCallback(() => {
     setStepSolved(true);
@@ -111,11 +114,11 @@ export default function ModuleLessonPage() {
       
       if (user) {
         try {
-          const lessonTitle = lesson.title;
+          const lessonTitle = lesson.title || '';
           const { data: lessonsData } = await supabase
             .from('lessons')
             .select('id')
-            .ilike('title', `%${lessonTitle}%`)
+            .ilike('title', `${lessonTitle}%`)
             .limit(1);
           
           if (lessonsData && lessonsData.length > 0) {
