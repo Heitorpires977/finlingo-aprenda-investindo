@@ -5,6 +5,8 @@ import { CheckCircle, Lock, Star, Zap, Target, Play } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { allModules } from '@/data/lessons';
 import { useMemo, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const SECTION_COLORS = ['bg-primary', 'bg-secondary'];
 const SECTION_ICONS = ['💰', '📊'];
@@ -21,12 +23,13 @@ export default function LearnPage() {
   const { data: progress } = useLessonProgress();
   const { data: profile } = useProfile();
   const { data: quests } = useDailyQuests();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
-  const scrollToCurrentMission = () => {
-    firstIncompleteSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const scrollToCurrent = () => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   const todayQuest = useMemo(() => {
@@ -107,6 +110,35 @@ export default function LearnPage() {
     }
   })() : false;
 
+  const firstIncompleteSectionRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToCurrentMission = async () => {
+    if (!user) return;
+    
+    const { data: freshProgress } = await supabase
+      .from('user_lesson_progress')
+      .select('lesson_id, completed')
+      .eq('user_id', user.id);
+    
+    const completedNow = new Set(freshProgress?.filter(p => p.completed).map(p => p.lesson_id) ?? []);
+    let targetLessonId = null;
+    
+    for (const [sectionId, section] of sections) {
+      if (!section.lessons) continue;
+      for (const lesson of section.lessons) {
+        if (!completedNow.has(lesson.id)) {
+          targetLessonId = lesson.id;
+          break;
+        }
+      }
+      if (targetLessonId) break;
+    }
+    
+    if (targetLessonId) {
+      document.getElementById(`lesson-${targetLessonId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <AppLayout>
       <div className="fixed bottom-6 right-6 z-50">
@@ -165,6 +197,7 @@ export default function LearnPage() {
           return (
             <div
               key={sectionId}
+              id={`section-${sectionId}`}
               className="space-y-4"
               ref={shouldRef ? firstIncompleteSectionRef : undefined}
             >
@@ -187,6 +220,7 @@ export default function LearnPage() {
                   return (
                     <button
                       key={lesson.id}
+                      id={`lesson-${lesson.id}`}
                       onClick={() => handleLessonClick(lesson, unlocked)}
                       disabled={!unlocked}
                       className={`w-full max-w-sm flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
