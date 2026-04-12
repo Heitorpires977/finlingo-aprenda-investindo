@@ -19,11 +19,11 @@ function getDayOfYear() {
 }
 
 export default function LearnPage() {
+  const { user, loading: authLoading } = useAuth();
   const { data: lessons, isLoading } = useLessons();
   const { data: progress } = useLessonProgress();
   const { data: profile } = useProfile();
   const { data: quests } = useDailyQuests();
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export default function LearnPage() {
     return map;
   }, []);
 
-  if (isLoading) {
+  if (isLoading || authLoading || !user || !lessons) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
