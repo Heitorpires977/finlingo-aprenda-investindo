@@ -71,6 +71,7 @@ export default function LeaderboardPage() {
                     <div className="flex-1">
                       <p className={`font-bold text-sm ${isUser ? 'text-primary' : 'text-foreground'}`}>
                         {player.username ?? 'Anônimo'} {isUser && '(você)'}
+                        {player.badges?.includes('MITO') && <span className="ml-1 text-xs bg-yellow-500 text-black px-1 rounded">(MITO)</span>}
                       </p>
                     </div>
                     <span className="font-black text-finlingo-xp">{player.xp_weekly} XP</span>
