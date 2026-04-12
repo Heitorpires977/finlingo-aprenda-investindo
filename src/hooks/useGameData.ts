@@ -236,11 +236,15 @@ export function useLeaderboard() {
         .limit(20);
       if (error) throw error;
       if (!profiles) return [];
-      const { data: badges } = await supabase.from('user_badges').select('user_id, badges(name)');
+      const { data: allBadges } = await supabase.from('user_badges').select('user_id, badge_id');
+      const { data: badgeInfo } = await supabase.from('badges').select('id, name');
       const badgeMap = new Map<string, string[]>();
-      badges?.forEach((b: any) => {
-        if (!badgeMap.has(b.user_id)) badgeMap.set(b.user_id, []);
-        badgeMap.get(b.user_id)?.push(b.badges?.name);
+      allBadges?.forEach((ub: any) => {
+        const b = badgeInfo?.find(bi => bi.id === ub.badge_id);
+        if (b) {
+          if (!badgeMap.has(ub.user_id)) badgeMap.set(ub.user_id, []);
+          badgeMap.get(ub.user_id)?.push(b.name);
+        }
       });
       return profiles.map(p => ({ ...p, badges: badgeMap.get(p.id) || [] }));
     },
