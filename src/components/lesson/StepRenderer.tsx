@@ -201,7 +201,7 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
   const [selectedRight, setSelectedRight] = useState<number | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
-  const [wrongPair, setWrongPair] = useState(false);
+  const [wrongPair, setWrongPair] = useState<{left: number; right: number} | null>(null);
 
   useEffect(() => {
     if (selectedLeft !== null && selectedRight !== null) {
@@ -215,10 +215,10 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
           onAnswered();
         }
       } else {
-        setWrongPair(true);
+        setWrongPair({ left: selectedLeft, right: selectedRight });
         onWrong();
         onAnswered();
-        setTimeout(() => setWrongPair(false), 600);
+        setTimeout(() => setWrongPair(null), 800);
       }
       setTimeout(() => {
         setSelectedLeft(null);
@@ -243,6 +243,8 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
                   ? 'bg-finlingo-correct/10 border-finlingo-correct text-foreground'
                   : selectedLeft === i
                   ? 'border-primary bg-primary/10 text-foreground'
+                  : wrongPair && wrongPair.left === i
+                  ? 'border-red-500 bg-red-500/20 text-foreground animate-pulse'
                   : 'border-border bg-card text-foreground hover:border-primary/50'
               }`}
             >
@@ -261,8 +263,8 @@ function MatchPairsStep({ step, onSolved, onWrong, onAnswered }: { step: Step; o
                   ? 'bg-finlingo-correct/10 border-finlingo-correct text-foreground'
                   : selectedRight === displayIdx
                   ? 'border-secondary bg-secondary/10 text-foreground'
-                  : wrongPair
-                  ? 'border-border bg-card text-foreground'
+                  : wrongPair && wrongPair.right === displayIdx
+                  ? 'border-red-500 bg-red-500/20 text-foreground animate-pulse'
                   : 'border-border bg-card text-foreground hover:border-secondary/50'
               }`}
             >
