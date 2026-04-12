@@ -4,7 +4,7 @@ import { useDailyQuests } from '@/hooks/useGameData';
 import { CheckCircle, Lock, Star, Zap, Target, Play } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { allModules } from '@/data/lessons';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,12 +19,27 @@ function getDayOfYear() {
 }
 
 export default function LearnPage() {
+  const [mounted, setMounted] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const { data: lessons, isLoading } = useLessons();
   const { data: progress } = useLessonProgress();
   const { data: profile } = useProfile();
   const { data: quests } = useDailyQuests();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading || authLoading || !user || !lessons) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Carregando...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const scrollRef = useRef<HTMLDivElement>(null);
   
@@ -49,16 +64,6 @@ export default function LearnPage() {
     });
     return map;
   }, []);
-
-  if (isLoading || authLoading || !user || !lessons) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Carregando...</div>
-        </div>
-      </AppLayout>
-    );
-  }
 
   const completedIds = new Set(progress?.filter(p => p.completed).map(p => p.lesson_id) ?? []);
   
