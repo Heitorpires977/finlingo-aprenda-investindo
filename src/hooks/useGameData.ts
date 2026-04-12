@@ -229,13 +229,20 @@ export function useLeaderboard() {
   return useQuery({
     queryKey: ['leaderboard'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('id, username, xp_weekly, league, avatar_id')
         .order('xp_weekly', { ascending: false })
         .limit(20);
       if (error) throw error;
-      return data;
+      if (!profiles) return [];
+      const { data: badges } = await supabase.from('user_badges').select('user_id, badges(name)');
+      const badgeMap = new Map<string, string[]>();
+      badges?.forEach((b: any) => {
+        if (!badgeMap.has(b.user_id)) badgeMap.set(b.user_id, []);
+        badgeMap.get(b.user_id)?.push(b.badges?.name);
+      });
+      return profiles.map(p => ({ ...p, badges: badgeMap.get(p.id) || [] }));
     },
   });
 }
